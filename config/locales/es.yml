@@ -1,0 +1,118 @@
+es:
+  activemodel:
+    attributes:
+      post:
+        body: Contenido
+        decidim_author_id: Autor
+        published_at: Fecha de publicación
+        title: Título
+    models:
+      decidim/whiteboard/create_post_event: Nueva publicación en pizarra
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Publicación
+        other: Pizarras
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Crear pizarra como
+        confirm_destroy: ¿Seguro que quieres eliminar esta pizarra?
+        destroy: Eliminar
+        edit: Editar
+        new: Nueva pizarra
+        title: Acciones
+      admin:
+        posts:
+          create:
+            invalid: Hubo un problema al crear la publicación.
+            success: Pizarra creada exitosamente.
+          destroy:
+            success: Pizarra eliminada exitosamente.
+          edit:
+            save: Guardar
+            title: Editar publicación
+          index:
+            not_published_yet: Aún no publicada.
+            title: Pizarras
+          new:
+            create: Crear
+            title: Crear publicación
+          update:
+            invalid: Hubo un problema al guardar la publicación.
+            success: Pizarra guardada exitosamente.
+          form:
+            iframe_width: "Ancho del iframe (px o %)"
+            iframe_height: "Alto del iframe (px)"
+      admin_log:
+        post:
+          create: "%{user_name} creó la pizarra %{resource_name} en %{space_name}"
+          delete: "%{user_name} eliminó la pizarra %{resource_name} de %{space_name}"
+          update: "%{user_name} actualizó la pizarra %{resource_name} en %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Últimas publicadas
+          name: Pizarras
+          see_all: Ver todas las publicaciones
+      last_activity:
+        new_post: 'Nueva publicación:'
+      models:
+        post:
+          fields:
+            author: Autor
+            body: Contenido
+            official_blog_post: Publicación oficial
+            published_at: Fecha de publicación
+            title: Título
+      posts:
+        index:
+          count:
+            one: "%{count} publicación"
+            other: "%{count} publicaciones"
+          empty: Aún no hay pizarras.
+    components:
+      whiteboard:
+        actions:
+          comment: Comentar
+          create: Crear
+          destroy: Eliminar
+          endorse: Respaldar
+          update: Actualizar
+        name: Pizarra
+        settings:
+          global:
+            announcement: Anuncio
+            comments_enabled: Comentarios habilitados
+            comments_max_length: Longitud máxima de comentarios (0 para valor por defecto)
+            content_height: Altura del contenido
+            content_height_help: Para usar altura automática, tu proveedor debe soportar la librería iframe-resizer.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Altura automática
+              manual_pixel: Altura manual en píxeles
+            content_width: Ancho del contenido
+            content_width_options:
+              full_width: Ancho completo
+              manual_percentage: Ancho manual en porcentaje
+              manual_pixel: Ancho manual en píxeles
+            frameborder: Mostrar borde
+            height_value: Valor altura
+            src: Fuente de contenido
+            src_help: Inserta la ruta del contenido que se mostrará
+            viewport_width: Limitar ancho máximo al viewport de la app
+            width_value: Valor ancho
+          step:
+            announcement: Anuncio
+            comments_blocked: Comentarios bloqueados
+            endorsements_blocked: Respaldos bloqueados
+            endorsements_enabled: Respaldos habilitados
+    events:
+      whiteboard:
+        post_created:
+          email_intro: La pizarra "%{resource_title}" ha sido publicada en "%{participatory_space_title}" que sigues.
+          email_outro: Recibes esta notificación porque sigues "%{participatory_space_title}". Puedes dejar de seguirlo desde el enlace anterior.
+          email_subject: Nueva pizarra publicada en %{participatory_space_title}
+          notification_title: La pizarra <a href="%{resource_path}">%{resource_title}</a> ha sido publicada en %{participatory_space_title}
+    statistics:
+      posts_count: Pizarras

@@ -1,0 +1,118 @@
+da:
+  activemodel:
+    attributes:
+      post:
+        body: Indhold
+        decidim_author_id: Forfatter
+        published_at: Udgivelsestid
+        title: Titel
+    models:
+      decidim/whiteboard/create_post_event: Ny tavle-post
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Post
+        other: Tavler
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Opret tavle som
+        confirm_destroy: Er du sikker på, at du vil slette denne tavle?
+        destroy: Slet
+        edit: Rediger
+        new: Ny tavle
+        title: Handlinger
+      admin:
+        posts:
+          create:
+            invalid: Der opstod et problem under oprettelsen af denne post.
+            success: Tavle oprettet succesfuldt.
+          destroy:
+            success: Tavle slettet succesfuldt.
+          edit:
+            save: Opdater
+            title: Rediger post
+          index:
+            not_published_yet: Ikke offentliggjort endnu.
+            title: Tavler
+          new:
+            create: Opret
+            title: Opret post
+          update:
+            invalid: Der opstod et problem under gemning af posten.
+            success: Tavle gemt succesfuldt.
+          form:
+            iframe_width: "Iframe bredde (px eller %)"
+            iframe_height: "Iframe højde (px)"
+      admin_log:
+        post:
+          create: "%{user_name} oprettede tavle %{resource_name} i %{space_name}"
+          delete: "%{user_name} slettede tavle %{resource_name} fra %{space_name}"
+          update: "%{user_name} opdaterede tavle %{resource_name} i %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Sidst offentliggjort
+          name: Tavler
+          see_all: Se alle posts
+      last_activity:
+        new_post: 'Ny post:'
+      models:
+        post:
+          fields:
+            author: Forfatter
+            body: Indhold
+            official_blog_post: Officiel post
+            published_at: Udgivelsestid
+            title: Titel
+      posts:
+        index:
+          count:
+            one: "%{count} post"
+            other: "%{count} posts"
+          empty: Der er endnu ingen tavler.
+    components:
+      whiteboard:
+        actions:
+          comment: Kommenter
+          create: Opret
+          destroy: Slet
+          endorse: Understøt
+          update: Opdater
+        name: Tavle
+        settings:
+          global:
+            announcement: Meddelelse
+            comments_enabled: Kommentarer aktiveret
+            comments_max_length: Maksimal længde på kommentarer (0 = standard)
+            content_height: Indholdshøjde
+            content_height_help: For automatisk højdeberegning skal din udbyder understøtte iframe-resizer-biblioteket.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Automatisk højde
+              manual_pixel: Manuel højde i pixels
+            content_width: Indholdsbrede
+            content_width_options:
+              full_width: Fuld bredde
+              manual_percentage: Manuel bredde i procent
+              manual_pixel: Manuel bredde i pixels
+            frameborder: Vis kant
+            height_value: Højdeværdi
+            src: Indholdskilde
+            src_help: Indsæt stien til indholdskilden, der skal vises.
+            viewport_width: Begræns maksimal bredde til applikations viewport
+            width_value: Breddeværdi
+          step:
+            announcement: Meddelelse
+            comments_blocked: Kommentarer blokeret
+            endorsements_blocked: Understøttelser blokeret
+            endorsements_enabled: Understøttelser aktiveret
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Tavle "%{resource_title}" er blevet offentliggjort i "%{participatory_space_title}", som du følger.
+          email_outro: Du modtager denne meddelelse, fordi du følger "%{participatory_space_title}". Du kan afmelde via linket ovenfor.
+          email_subject: Ny tavle offentliggjort i %{participatory_space_title}
+          notification_title: Tavle <a href="%{resource_path}">%{resource_title}</a> er blevet offentliggjort i %{participatory_space_title}
+    statistics:
+      posts_count: Tavler

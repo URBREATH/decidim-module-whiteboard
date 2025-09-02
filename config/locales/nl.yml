@@ -1,0 +1,118 @@
+nl:
+  activemodel:
+    attributes:
+      post:
+        body: Inhoud
+        decidim_author_id: Auteur
+        published_at: Publicatietijd
+        title: Titel
+    models:
+      decidim/whiteboard/create_post_event: Nieuwe whiteboardpost
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Publicatie
+        other: Whiteboards
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Maak whiteboard als
+        confirm_destroy: Weet je zeker dat je dit whiteboard wilt verwijderen?
+        destroy: Verwijderen
+        edit: Bewerken
+        new: Nieuw whiteboard
+        title: Acties
+      admin:
+        posts:
+          create:
+            invalid: Er is een probleem opgetreden bij het maken van deze publicatie.
+            success: Whiteboard succesvol aangemaakt.
+          destroy:
+            success: Whiteboard succesvol verwijderd.
+          edit:
+            save: Bijwerken
+            title: Publicatie bewerken
+          index:
+            not_published_yet: Nog niet gepubliceerd.
+            title: Whiteboards
+          new:
+            create: Maken
+            title: Publicatie maken
+          update:
+            invalid: Er is een probleem opgetreden bij het opslaan van de publicatie.
+            success: Whiteboard succesvol opgeslagen.
+          form:
+            iframe_width: "Iframe breedte (px of %)"
+            iframe_height: "Iframe hoogte (px)"
+      admin_log:
+        post:
+          create: "%{user_name} heeft whiteboard %{resource_name} aangemaakt in %{space_name}"
+          delete: "%{user_name} heeft whiteboard %{resource_name} verwijderd uit %{space_name}"
+          update: "%{user_name} heeft whiteboard %{resource_name} bijgewerkt in %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Laatst gepubliceerd
+          name: Whiteboards
+          see_all: Bekijk alle publicaties
+      last_activity:
+        new_post: 'Nieuwe publicatie:'
+      models:
+        post:
+          fields:
+            author: Auteur
+            body: Inhoud
+            official_blog_post: Officiële publicatie
+            published_at: Publicatietijd
+            title: Titel
+      posts:
+        index:
+          count:
+            one: "%{count} publicatie"
+            other: "%{count} publicaties"
+          empty: Er zijn nog geen whiteboards.
+    components:
+      whiteboard:
+        actions:
+          comment: Reageren
+          create: Maken
+          destroy: Verwijderen
+          endorse: Ondersteunen
+          update: Bijwerken
+        name: Whiteboard
+        settings:
+          global:
+            announcement: Aankondiging
+            comments_enabled: Reacties ingeschakeld
+            comments_max_length: Maximale lengte reacties (0 = standaard)
+            content_height: Inhoudshoogte
+            content_height_help: Voor automatische hoogteberekening moet je provider de iframe-resizer bibliotheek ondersteunen.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Automatische hoogte
+              manual_pixel: Handmatige hoogte in pixels
+            content_width: Inhoudsbreedte
+            content_width_options:
+              full_width: Volledige breedte
+              manual_percentage: Handmatige breedte in procenten
+              manual_pixel: Handmatige breedte in pixels
+            frameborder: Rand tonen
+            height_value: Hoogtewaarde
+            src: Inhoudsbron
+            src_help: Vul het pad in van de inhoud die wordt weergegeven
+            viewport_width: Beperk maximale breedte tot applicatie viewport
+            width_value: Breedtewaarde
+          step:
+            announcement: Aankondiging
+            comments_blocked: Reacties geblokkeerd
+            endorsements_blocked: Ondersteuningen geblokkeerd
+            endorsements_enabled: Ondersteuningen ingeschakeld
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Whiteboard "%{resource_title}" is gepubliceerd in "%{participatory_space_title}" dat je volgt.
+          email_outro: Je ontvangt deze melding omdat je "%{participatory_space_title}" volgt. Je kunt dit volgen stopzetten via de bovenstaande link.
+          email_subject: Nieuw whiteboard gepubliceerd in %{participatory_space_title}
+          notification_title: Whiteboard <a href="%{resource_path}">%{resource_title}</a> is gepubliceerd in %{participatory_space_title}
+    statistics:
+      posts_count: Whiteboards

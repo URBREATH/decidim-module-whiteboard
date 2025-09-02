@@ -1,0 +1,118 @@
+el:
+  activemodel:
+    attributes:
+      post:
+        body: Περιεχόμενο
+        decidim_author_id: Συντάκτης
+        published_at: Ώρα δημοσίευσης
+        title: Τίτλος
+    models:
+      decidim/whiteboard/create_post_event: Νέα δημοσίευση στον πίνακα
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Δημοσίευση
+        other: Πίνακες
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Δημιουργία πίνακα ως
+        confirm_destroy: Είστε βέβαιοι ότι θέλετε να διαγράψετε αυτόν τον πίνακα;
+        destroy: Διαγραφή
+        edit: Επεξεργασία
+        new: Νέος πίνακας
+        title: Ενέργειες
+      admin:
+        posts:
+          create:
+            invalid: Υπήρξε πρόβλημα κατά τη δημιουργία της δημοσίευσης.
+            success: Ο πίνακας δημιουργήθηκε με επιτυχία.
+          destroy:
+            success: Ο πίνακας διαγράφηκε με επιτυχία.
+          edit:
+            save: Αποθήκευση
+            title: Επεξεργασία δημοσίευσης
+          index:
+            not_published_yet: Δεν έχει δημοσιευθεί ακόμα.
+            title: Πίνακες
+          new:
+            create: Δημιουργία
+            title: Δημιουργία δημοσίευσης
+          update:
+            invalid: Υπήρξε πρόβλημα κατά την αποθήκευση της δημοσίευσης.
+            success: Ο πίνακας αποθηκεύτηκε με επιτυχία.
+          form:
+            iframe_width: "Πλάτος iframe (px ή %)"
+            iframe_height: "Ύψος iframe (px)"
+      admin_log:
+        post:
+          create: "%{user_name} δημιούργησε τον πίνακα %{resource_name} στο %{space_name}"
+          delete: "%{user_name} διέγραψε τον πίνακα %{resource_name} από το %{space_name}"
+          update: "%{user_name} ενημέρωσε τον πίνακα %{resource_name} στο %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Τελευταία δημοσιευμένα
+          name: Πίνακες
+          see_all: Δείτε όλες τις δημοσιεύσεις
+      last_activity:
+        new_post: 'Νέα δημοσίευση:'
+      models:
+        post:
+          fields:
+            author: Συντάκτης
+            body: Περιεχόμενο
+            official_blog_post: Επίσημη δημοσίευση
+            published_at: Ώρα δημοσίευσης
+            title: Τίτλος
+      posts:
+        index:
+          count:
+            one: "%{count} δημοσίευση"
+            other: "%{count} δημοσιεύσεις"
+          empty: Δεν υπάρχουν ακόμη πίνακες.
+    components:
+      whiteboard:
+        actions:
+          comment: Σχολίασε
+          create: Δημιουργία
+          destroy: Διαγραφή
+          endorse: Υποστήριξη
+          update: Ενημέρωση
+        name: Πίνακας
+        settings:
+          global:
+            announcement: Ανακοίνωση
+            comments_enabled: Σχόλια ενεργοποιημένα
+            comments_max_length: Μέγιστο μήκος σχολίων (0 για προεπιλογή)
+            content_height: Ύψος περιεχομένου
+            content_height_help: Για αυτόματη ρύθμιση ύψους, ο πάροχός σας πρέπει να υποστηρίζει την βιβλιοθήκη iframe-resizer.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Αυτόματο ύψος
+              manual_pixel: Χειροκίνητο ύψος σε pixels
+            content_width: Πλάτος περιεχομένου
+            content_width_options:
+              full_width: Πλήρες πλάτος
+              manual_percentage: Χειροκίνητο πλάτος σε ποσοστό
+              manual_pixel: Χειροκίνητο πλάτος σε pixels
+            frameborder: Εμφάνιση πλαισίου
+            height_value: Τιμή ύψους
+            src: Πηγή περιεχομένου
+            src_help: Εισάγετε τη διαδρομή της πηγής περιεχομένου που θα εμφανιστεί.
+            viewport_width: Περιορισμός μέγιστου πλάτους στο viewport της εφαρμογής
+            width_value: Τιμή πλάτους
+          step:
+            announcement: Ανακοίνωση
+            comments_blocked: Σχόλια μπλοκαρισμένα
+            endorsements_blocked: Υποστηρίξεις μπλοκαρισμένες
+            endorsements_enabled: Υποστηρίξεις ενεργοποιημένες
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Ο πίνακας "%{resource_title}" δημοσιεύτηκε στο "%{participatory_space_title}" που παρακολουθείτε.
+          email_outro: Λαμβάνετε αυτή την ειδοποίηση επειδή παρακολουθείτε το "%{participatory_space_title}". Μπορείτε να αποεγγραφείτε από τον παραπάνω σύνδεσμο.
+          email_subject: Νέος πίνακας δημοσιεύτηκε στο %{participatory_space_title}
+          notification_title: Ο πίνακας <a href="%{resource_path}">%{resource_title}</a> δημοσιεύτηκε στο %{participatory_space_title}
+    statistics:
+      posts_count: Πίνακες

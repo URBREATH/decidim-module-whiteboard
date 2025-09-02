@@ -1,0 +1,118 @@
+ro:
+  activemodel:
+    attributes:
+      post:
+        body: Conținut
+        decidim_author_id: Autor
+        published_at: Data publicării
+        title: Titlu
+    models:
+      decidim/whiteboard/create_post_event: Nouă postare pe tablă
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Postare
+        other: Tablouri
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Creează tablă ca
+        confirm_destroy: Sigur doriți să ștergeți această tablă?
+        destroy: Șterge
+        edit: Editează
+        new: Tablă nouă
+        title: Acțiuni
+      admin:
+        posts:
+          create:
+            invalid: A apărut o problemă la crearea postării.
+            success: Tablă creată cu succes.
+          destroy:
+            success: Tablă ștearsă cu succes.
+          edit:
+            save: Salvează
+            title: Editează postarea
+          index:
+            not_published_yet: Nu a fost încă publicată.
+            title: Tablouri
+          new:
+            create: Creează
+            title: Creează postare
+          update:
+            invalid: A apărut o problemă la salvarea postării.
+            success: Tablă salvată cu succes.
+          form:
+            iframe_width: "Lățime iframe (px sau %)"
+            iframe_height: "Înălțime iframe (px)"
+      admin_log:
+        post:
+          create: "%{user_name} a creat tabla %{resource_name} în %{space_name}"
+          delete: "%{user_name} a șters tabla %{resource_name} din %{space_name}"
+          update: "%{user_name} a actualizat tabla %{resource_name} în %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Ultimele publicate
+          name: Tablouri
+          see_all: Vezi toate postările
+      last_activity:
+        new_post: 'Postare nouă:'
+      models:
+        post:
+          fields:
+            author: Autor
+            body: Conținut
+            official_blog_post: Postare oficială
+            published_at: Data publicării
+            title: Titlu
+      posts:
+        index:
+          count:
+            one: "%{count} postare"
+            other: "%{count} postări"
+          empty: Nu există încă tablouri.
+    components:
+      whiteboard:
+        actions:
+          comment: Comentează
+          create: Creează
+          destroy: Șterge
+          endorse: Susține
+          update: Actualizează
+        name: Tablă
+        settings:
+          global:
+            announcement: Anunț
+            comments_enabled: Comentarii activate
+            comments_max_length: Lungime maximă comentarii (0 = implicit)
+            content_height: Înălțime conținut
+            content_height_help: Pentru înălțime automată, furnizorul trebuie să suporte biblioteca iframe-resizer.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Înălțime automată
+              manual_pixel: Înălțime manuală în pixeli
+            content_width: Lățime conținut
+            content_width_options:
+              full_width: Lățime completă
+              manual_percentage: Lățime manuală în procente
+              manual_pixel: Lățime manuală în pixeli
+            frameborder: Afișează margine
+            height_value: Valoare înălțime
+            src: Sursă conținut
+            src_help: Introdu calea către conținutul care va fi afișat
+            viewport_width: Limitează lățimea maximă la viewport-ul aplicației
+            width_value: Valoare lățime
+          step:
+            announcement: Anunț
+            comments_blocked: Comentarii blocate
+            endorsements_blocked: Susțineri blocate
+            endorsements_enabled: Susțineri activate
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Tablă "%{resource_title}" a fost publicată în "%{participatory_space_title}" pe care o urmărești.
+          email_outro: Primești această notificare deoarece urmărești "%{participatory_space_title}". Poți să te dezabonezi folosind linkul de mai sus.
+          email_subject: Nouă tablă publicată în %{participatory_space_title}
+          notification_title: Tablă <a href="%{resource_path}">%{resource_title}</a> a fost publicată în %{participatory_space_title}
+    statistics:
+      posts_count: Tablouri

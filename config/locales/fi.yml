@@ -1,0 +1,118 @@
+fi:
+  activemodel:
+    attributes:
+      post:
+        body: Sisältö
+        decidim_author_id: Tekijä
+        published_at: Julkaisuaika
+        title: Otsikko
+    models:
+      decidim/whiteboard/create_post_event: Uusi julkaisu taululla
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Julkaisu
+        other: Taulut
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Luo taulu nimellä
+        confirm_destroy: Haluatko varmasti poistaa tämän taulun?
+        destroy: Poista
+        edit: Muokkaa
+        new: Uusi taulu
+        title: Toiminnot
+      admin:
+        posts:
+          create:
+            invalid: Julkaisun luomisessa tapahtui virhe.
+            success: Taulu luotu onnistuneesti.
+          destroy:
+            success: Taulu poistettu onnistuneesti.
+          edit:
+            save: Päivitä
+            title: Muokkaa julkaisua
+          index:
+            not_published_yet: Ei vielä julkaistu.
+            title: Taulut
+          new:
+            create: Luo
+            title: Luo julkaisu
+          update:
+            invalid: Julkaisun tallennuksessa tapahtui virhe.
+            success: Taulu tallennettu onnistuneesti.
+          form:
+            iframe_width: "Iframe leveys (px tai %)"
+            iframe_height: "Iframe korkeus (px)"
+      admin_log:
+        post:
+          create: "%{user_name} loi taulun %{resource_name} tilassa %{space_name}"
+          delete: "%{user_name} poisti taulun %{resource_name} tilasta %{space_name}"
+          update: "%{user_name} päivitti taulun %{resource_name} tilassa %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Viimeksi julkaistu
+          name: Taulut
+          see_all: Näytä kaikki julkaisut
+      last_activity:
+        new_post: 'Uusi julkaisu:'
+      models:
+        post:
+          fields:
+            author: Tekijä
+            body: Sisältö
+            official_blog_post: Virallinen julkaisu
+            published_at: Julkaisuaika
+            title: Otsikko
+      posts:
+        index:
+          count:
+            one: "%{count} julkaisu"
+            other: "%{count} julkaisua"
+          empty: Tauluja ei ole vielä.
+    components:
+      whiteboard:
+        actions:
+          comment: Kommentoi
+          create: Luo
+          destroy: Poista
+          endorse: Tue
+          update: Päivitä
+        name: Taulu
+        settings:
+          global:
+            announcement: Ilmoitus
+            comments_enabled: Kommentit käytössä
+            comments_max_length: Kommentin maksimi pituus (0 = oletus)
+            content_height: Sisällön korkeus
+            content_height_help: Automaattisen korkeuden laskemiseen palveluntarjoajan on tuettava iframe-resizer-kirjastoa.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Automaattinen korkeus
+              manual_pixel: Korkeus pikseleinä
+            content_width: Sisällön leveys
+            content_width_options:
+              full_width: Koko leveys
+              manual_percentage: Leveys prosentteina
+              manual_pixel: Leveys pikseleinä
+            frameborder: Näytä reuna
+            height_value: Korkeusarvo
+            src: Sisältölähde
+            src_help: Syötä polku näytettävälle sisällölle
+            viewport_width: Rajoita maksimileveys sovelluksen näkymäikkunaan
+            width_value: Leveyden arvo
+          step:
+            announcement: Ilmoitus
+            comments_blocked: Kommentit estetty
+            endorsements_blocked: Tuet estetty
+            endorsements_enabled: Tuet käytössä
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Taulu "%{resource_title}" on julkaistu tilassa "%{participatory_space_title}", jota seuraat.
+          email_outro: Saat tämän ilmoituksen, koska seuraat tilaa "%{participatory_space_title}". Voit lopettaa seurannan yllä olevasta linkistä.
+          email_subject: Uusi taulu julkaistu tilassa %{participatory_space_title}
+          notification_title: Taulu <a href="%{resource_path}">%{resource_title}</a> on julkaistu tilassa %{participatory_space_title}
+    statistics:
+      posts_count: Taulut

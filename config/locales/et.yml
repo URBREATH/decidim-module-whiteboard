@@ -1,0 +1,118 @@
+et:
+  activemodel:
+    attributes:
+      post:
+        body: Sisu
+        decidim_author_id: Autor
+        published_at: Avaldamise aeg
+        title: Pealkiri
+    models:
+      decidim/whiteboard/create_post_event: Uus postitus tahvlil
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Postitus
+        other: Tahvlid
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Loo tahvel kasutajana
+        confirm_destroy: Kas oled kindel, et soovid selle tahvli kustutada?
+        destroy: Kustuta
+        edit: Muuda
+        new: Uus tahvel
+        title: Tegevused
+      admin:
+        posts:
+          create:
+            invalid: Postituse loomisel tekkis probleem.
+            success: Tahvel loodud edukalt.
+          destroy:
+            success: Tahvel kustutatud edukalt.
+          edit:
+            save: Salvesta
+            title: Muuda postitust
+          index:
+            not_published_yet: Veel avaldamata.
+            title: Tahvlid
+          new:
+            create: Loo
+            title: Loo postitus
+          update:
+            invalid: Postituse salvestamisel tekkis probleem.
+            success: Tahvel salvestatud edukalt.
+          form:
+            iframe_width: "Iframe laius (px või %)"
+            iframe_height: "Iframe kõrgus (px)"
+      admin_log:
+        post:
+          create: "%{user_name} lõi tahvli %{resource_name} ruumis %{space_name}"
+          delete: "%{user_name} kustutas tahvli %{resource_name} ruumist %{space_name}"
+          update: "%{user_name} uuendas tahvlit %{resource_name} ruumis %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Viimati avaldatud
+          name: Tahvlid
+          see_all: Vaata kõiki postitusi
+      last_activity:
+        new_post: 'Uus postitus:'
+      models:
+        post:
+          fields:
+            author: Autor
+            body: Sisu
+            official_blog_post: Ametlik postitus
+            published_at: Avaldamise aeg
+            title: Pealkiri
+      posts:
+        index:
+          count:
+            one: "%{count} postitus"
+            other: "%{count} postitust"
+          empty: Tahvleid veel pole.
+    components:
+      whiteboard:
+        actions:
+          comment: Kommenteeri
+          create: Loo
+          destroy: Kustuta
+          endorse: Toeta
+          update: Uuenda
+        name: Tahvel
+        settings:
+          global:
+            announcement: Teade
+            comments_enabled: Kommentaarid lubatud
+            comments_max_length: Kommentaari maksimaalne pikkus (0 = vaikimisi)
+            content_height: Sisu kõrgus
+            content_height_help: Automaatseks kõrguse määramiseks peab sinu pakkuja toetama iframe-resizer teeki.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Automaatne kõrgus
+              manual_pixel: Käsitsi kõrgus pikslites
+            content_width: Sisu laius
+            content_width_options:
+              full_width: Täislaius
+              manual_percentage: Käsitsi laius protsentides
+              manual_pixel: Käsitsi laius pikslites
+            frameborder: Näita raami
+            height_value: Kõrguse väärtus
+            src: Sisu allikas
+            src_help: Sisesta tee sisu allikale, mida kuvada
+            viewport_width: Piira maksimaalset laiust rakenduse vaateaknas
+            width_value: Laiuse väärtus
+          step:
+            announcement: Teade
+            comments_blocked: Kommentaarid blokeeritud
+            endorsements_blocked: Toetused blokeeritud
+            endorsements_enabled: Toetused lubatud
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Tahvel "%{resource_title}" avaldati ruumis "%{participatory_space_title}", mida jälgid.
+          email_outro: Saad selle teate, sest jälgid ruumi "%{participatory_space_title}". Võid jälgimise lõpetada ülaloleva lingi kaudu.
+          email_subject: Uus tahvel avaldatud ruumis %{participatory_space_title}
+          notification_title: Tahvel <a href="%{resource_path}">%{resource_title}</a> avaldati ruumis %{participatory_space_title}
+    statistics:
+      posts_count: Tahvlid

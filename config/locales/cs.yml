@@ -1,0 +1,118 @@
+cs:
+  activemodel:
+    attributes:
+      post:
+        body: Obsah
+        decidim_author_id: Autor
+        published_at: Čas publikace
+        title: Název
+    models:
+      decidim/whiteboard/create_post_event: Nový příspěvek na tabuli
+  activerecord:
+    models:
+      decidim/whiteboard/post:
+        one: Příspěvek
+        other: Tabule
+  decidim:
+    whiteboard:
+      actions:
+        author_id: Vytvořit tabuli jako
+        confirm_destroy: Opravdu chcete tuto tabuli odstranit?
+        destroy: Odstranit
+        edit: Upravit
+        new: Nová tabule
+        title: Akce
+      admin:
+        posts:
+          create:
+            invalid: Při vytváření příspěvku došlo k problému.
+            success: Tabule byla úspěšně vytvořena.
+          destroy:
+            success: Tabule byla úspěšně odstraněna.
+          edit:
+            save: Aktualizovat
+            title: Upravit příspěvek
+          index:
+            not_published_yet: Ještě nebylo publikováno.
+            title: Tabule
+          new:
+            create: Vytvořit
+            title: Vytvořit příspěvek
+          update:
+            invalid: Při ukládání příspěvku došlo k problému.
+            success: Tabule byla úspěšně uložena.
+          form:
+            iframe_width: "Šířka iframe (px nebo %)"
+            iframe_height: "Výška iframe (px)"
+      admin_log:
+        post:
+          create: "%{user_name} vytvořil tabuli %{resource_name} ve %{space_name}"
+          delete: "%{user_name} odstranil tabuli %{resource_name} z %{space_name}"
+          update: "%{user_name} aktualizoval tabuli %{resource_name} ve %{space_name}"
+      content_blocks:
+        highlighted_posts:
+          last_published: Poslední publikováno
+          name: Tabule
+          see_all: Zobrazit všechny příspěvky
+      last_activity:
+        new_post: 'Nový příspěvek:'
+      models:
+        post:
+          fields:
+            author: Autor
+            body: Obsah
+            official_blog_post: Oficiální příspěvek
+            published_at: Čas publikace
+            title: Název
+      posts:
+        index:
+          count:
+            one: "%{count} příspěvek"
+            other: "%{count} příspěvků"
+          empty: Zatím nejsou žádné tabule.
+    components:
+      whiteboard:
+        actions:
+          comment: Komentovat
+          create: Vytvořit
+          destroy: Odstranit
+          endorse: Podpořit
+          update: Aktualizovat
+        name: Tabule
+        settings:
+          global:
+            announcement: Oznámení
+            comments_enabled: Komentáře povoleny
+            comments_max_length: Maximální délka komentáře (0 = výchozí)
+            content_height: Výška obsahu
+            content_height_help: Pro automatické nastavení výšky musí váš poskytovatel podporovat knihovnu iframe-resizer.
+            content_height_options:
+              '16:9': '16:9'
+              '4:3': '4:3'
+              auto: Automatická výška
+              manual_pixel: Ruční výška v pixelech
+            content_width: Šířka obsahu
+            content_width_options:
+              full_width: Plná šířka
+              manual_percentage: Ruční šířka v procentech
+              manual_pixel: Ruční šířka v pixelech
+            frameborder: Zobrazit okraj
+            height_value: Hodnota výšky
+            src: Zdroj obsahu
+            src_help: Zadejte cestu ke zdroji obsahu, který se zobrazí.
+            viewport_width: Omezit maximální šířku na viewport aplikace
+            width_value: Hodnota šířky
+          step:
+            announcement: Oznámení
+            comments_blocked: Komentáře blokovány
+            endorsements_blocked: Podpory blokovány
+            endorsements_enabled: Podpory povoleny
+    events:
+      whiteboard:
+        post_created:
+          email_intro: Tabule "%{resource_title}" byla publikována v "%{participatory_space_title}", který sledujete.
+          email_outro: Tuto notifikaci jste obdrželi, protože sledujete "%{participatory_space_title}". Můžete se odhlásit přes předchozí odkaz.
+          email_subject: Nová tabule publikována ve %{participatory_space_title}
+          notification_title: Tabule <a href="%{resource_path}">%{resource_title}</a> byla publikována ve %{participatory_space_title}
+    statistics:
+      posts_count: Tabule
