@@ -9,7 +9,7 @@ module Decidim
         helper PostsHelper
 
         helper_method :iframe, :remove_margins?, :viewport_width?
-        before_action :add_additional_csp_directives, only: :show
+        before_action :allow_spacedeck_iframe, only: [:new, :edit]
 
         
 
@@ -34,6 +34,15 @@ module Decidim
             end
           end
         end
+
+
+        def allow_spacedeck_iframe
+          content_security_policy.append_csp_directive(
+            "frame-src",
+            "https://spacedeck-dev.urbreath.tech https://keycloak-dev.urbreath.tech",
+          )
+        end
+
 
         def iframe
           @iframe ||= sanitize(

@@ -1,43 +1,127 @@
 <div class="form__wrapper">
   <div class="card pt-4">
     <div class="card-section">
+
       <div class="row column">
-          <%= post_author_select_field form, :decidim_author_id, label: t("decidim.whiteboard.actions.author_id") %>
+        <%= post_author_select_field form, :decidim_author_id, label: t("decidim.whiteboard.actions.author_id") %>
       </div>
 
       <div class="row column">
         <%= form.translated :text_field, :title, autofocus: true, aria: { label: :title } %>
       </div>
+
       <div class="row column">
         <%= form.translated :editor, :body, lines: 30, aria: { label: :body } %>
       </div>
+
       <div class="row">
         <div class="columns">
           <%= form.datetime_field :published_at %>
         </div>
       </div>
 
+      <!-- URL + pulsante modal -->
+      <div class="row align-middle">
+        <div class="columns small-8">
+          <%= form.text_field :iframe_src, id: "iframe_src_field", label: "URL" %>
+        </div>
+        <div class="columns small-4 text-right">
+          <button type="button" id="openIframeModal" class="button button__sm button__secondary">
+            Create new board
+          </button>
+        </div>
+      </div>
 
       <div class="row">
-  <div class="columns">
-    <%= form.text_field :iframe_src, label: "URL" %>
-  </div>
-</div>
+        <div class="columns">
+          <%= form.text_field :iframe_width, label: t("decidim.whiteboard.admin.posts.form.iframe_width"), value: form.object.iframe_width || "100%" %>
+        </div>
+      </div>
 
-<div class="row">
-  <div class="columns">
-    <%= form.text_field :iframe_width, label: t("decidim.whiteboard.admin.posts.form.iframe_width"), value: form.object.iframe_width || "100%" %>
-  </div>
-</div>
+      <div class="row">
+        <div class="columns">
+          <%= form.number_field :iframe_height, label: t("decidim.whiteboard.admin.posts.form.iframe_height"), value: form.object.iframe_height || 800 %>
+        </div>
+      </div>
 
-<div class="row">
-  <div class="columns">
-    <%= form.number_field :iframe_height, label: t("decidim.whiteboard.admin.posts.form.iframe_height"), value: form.object.iframe_height || 800 %>
-  </div>
-</div>
-
+      <!-- Modal personalizzato -->
+      <div id="iframeModal" class="custom-modal" style="display: none;">
+        <div class="custom-modal-content">
+          <span id="closeIframeModal" class="custom-modal-close">&times;</span>
+          <iframe id="iframePreview"
+                  src=""
+                  style="width: 100%; height: 600px; border: none;"
+                  allowfullscreen>
+          </iframe>
+        </div>
+      </div>
 
     </div>
   </div>
-
 </div>
+
+<!-- Script -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const modal = document.getElementById("iframeModal");
+    const openBtn = document.getElementById("openIframeModal");
+    const closeBtn = document.getElementById("closeIframeModal");
+    const iframe = document.getElementById("iframePreview");
+    const input = document.getElementById("iframe_src_field");
+
+    openBtn.addEventListener("click", function() {
+      iframe.src = input.value.trim() || "https://spacedeck-dev.urbreath.tech/";
+      modal.style.display = "flex";
+    });
+
+    closeBtn.addEventListener("click", function() {
+      modal.style.display = "none";
+      iframe.src = ""; // scarica l’iframe
+    });
+
+    window.addEventListener("click", function(e) {
+      if (e.target === modal) {
+        modal.style.display = "none";
+        iframe.src = "";
+      }
+    });
+  });
+</script>
+
+<!-- Stili base -->
+<style>
+  .custom-modal {
+    position: fixed;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.65);
+  }
+
+  .custom-modal-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 900px;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  }
+
+  .custom-modal-close {
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    font-size: 28px;
+    color: #333;
+    cursor: pointer;
+  }
+
+  .custom-modal-close:hover {
+    color: #000;
+  }
+</style>
