@@ -79,6 +79,13 @@
       "kcTokens",
       "oidc.user"
     ];
+    // Base information from the Decidim session, used if token decoding fails
+    const DECIDIM_USER_DATA = Object.freeze(<%= raw({
+      email: current_user&.email,
+      name: current_user&.name,
+      language: ((current_user&.locale).presence || I18n.locale).to_s,
+      refreshToken: current_user&.try(:whiteboard_refresh_token)
+    }.to_json) %>);
 
     function safeGetItem(storage, key) {
       try {
@@ -290,23 +297,23 @@
     function postTokenToIframe() {
       if (!iframe || !iframe.contentWindow) return;
 
-      const credentials = getCredentialsFromBrowser();
-      if (!credentials || !credentials.accessToken) return;
-
-      const claims = decodeTokenClaims(credentials.accessToken);
-      const email = resolveEmail(claims);
-      const name = resolveName(claims);
-      const language = detectLanguage(claims);
+      const credentials = getCredentialsFromBrowser() || {};
+      const accessToken = credentials.accessToken || null;
+      const claims = accessToken ? decodeTokenClaims(accessToken) : {};
+      const email = resolveEmail(claims) || DECIDIM_USER_DATA.email || null;
+      const name = resolveName(claims) || DECIDIM_USER_DATA.name || null;
+      const language = detectLanguage(claims) || DECIDIM_USER_DATA.language || null;
+      const refreshToken = credentials.refreshToken || DECIDIM_USER_DATA.refreshToken || null;
 
       const targetOrigin = resolveTargetOrigin(iframe.src);
       const payload = {
         embedded: true,
         type: TOKEN_MESSAGE_TYPE,
-        accessToken: credentials.accessToken,
-        refreshToken: credentials.refreshToken || null,
-        email: email || null,
-        name: name || null,
-        language: language || null
+        accessToken,
+        refreshToken,
+        email,
+        name,
+        language
       };
 
       iframe.contentWindow.postMessage(payload, targetOrigin || "*");
