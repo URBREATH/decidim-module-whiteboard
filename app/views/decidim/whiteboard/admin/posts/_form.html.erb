@@ -67,9 +67,102 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
+    const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
+    const TOKEN_MESSAGE_TYPE = "decidim:whiteboard:setToken";
+
+    function safeGetItem(storage, key) {
+      try {
+        return storage.getItem(key);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function detectTokenInStorage(storage) {
+      if (!storage) return null;
+      const knownKeys = ["whiteboardToken", "spacedeckToken", "token", "accessToken", "authToken"];
+
+      for (const key of knownKeys) {
+        const value = safeGetItem(storage, key);
+        if (value) return value;
+      }
+
+      try {
+        for (let index = 0; index < storage.length; index += 1) {
+          const key = storage.key(index);
+          if (key && key.toLowerCase().includes("token")) {
+            const value = storage.getItem(key);
+            if (value) return value;
+          }
+        }
+      } catch (error) {
+        return null;
+      }
+
+      return null;
+    }
+
+    function getTokenFromBrowser() {
+      const sources = [];
+
+      try {
+        if (window.localStorage) sources.push(window.localStorage);
+      } catch (error) {
+        // ignore access issues
+      }
+
+      try {
+        if (window.sessionStorage) sources.push(window.sessionStorage);
+      } catch (error) {
+        // ignore access issues
+      }
+
+      for (const storage of sources) {
+        const token = detectTokenInStorage(storage);
+        if (token) return token;
+      }
+
+      return null;
+    }
+
+    function resolveTargetOrigin(url) {
+      if (!url) return "*";
+
+      try {
+        return new URL(url).origin;
+      } catch (firstError) {
+        try {
+          return new URL(url, window.location.href).origin;
+        } catch (secondError) {
+          return "*";
+        }
+      }
+    }
+
+    function postTokenToIframe() {
+      if (!iframe || !iframe.contentWindow) return;
+
+      const token = getTokenFromBrowser();
+      if (!token) return;
+
+      const targetOrigin = resolveTargetOrigin(iframe.src);
+
+      iframe.contentWindow.postMessage(
+        { type: TOKEN_MESSAGE_TYPE, token },
+        targetOrigin || "*"
+      );
+    }
+
+    function handleIframeLoad() {
+      postTokenToIframe();
+    }
 
     openBtn.addEventListener("click", function() {
-      iframe.src = input.value.trim() || "https://spacedeck-dev.urbreath.tech/";
+      const iframeUrl = input.value.trim() || DEFAULT_IFRAME_URL;
+
+      iframe.addEventListener("load", handleIframeLoad, { once: true });
+      iframe.src = iframeUrl;
+
       modal.style.display = "flex";
     });
 
