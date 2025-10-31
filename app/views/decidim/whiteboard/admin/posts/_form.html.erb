@@ -68,7 +68,17 @@
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
     const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
-    const TOKEN_MESSAGE_TYPE = "decidim:whiteboard:setToken";
+    const TOKEN_MESSAGE_TYPE = "spacedeck-token";
+    const KNOWN_TOKEN_KEYS = [
+      "whiteboardToken",
+      "spacedeckToken",
+      "token",
+      "accessToken",
+      "access_token",
+      "keycloak",
+      "kcTokens",
+      "oidc.user"
+    ];
 
     function safeGetItem(storage, key) {
       try {
@@ -78,31 +88,125 @@
       }
     }
 
-    function detectTokenInStorage(storage) {
-      if (!storage) return null;
-      const knownKeys = ["whiteboardToken", "spacedeckToken", "token", "accessToken", "authToken"];
-
-      for (const key of knownKeys) {
-        const value = safeGetItem(storage, key);
-        if (value) return value;
-      }
-
-      try {
-        for (let index = 0; index < storage.length; index += 1) {
-          const key = storage.key(index);
-          if (key && key.toLowerCase().includes("token")) {
-            const value = storage.getItem(key);
-            if (value) return value;
-          }
+    function tryParseJSON(value) {
+      if (typeof value !== "string") return value;
+      const trimmed = value.trim();
+      if (!trimmed) return value;
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          return JSON.parse(trimmed);
+        } catch (error) {
+          return value;
         }
-      } catch (error) {
-        return null;
       }
-
-      return null;
+      return value;
     }
 
-    function getTokenFromBrowser() {
+    function looksLikeJwt(value) {
+      return typeof value === "string" && value.split(".").length === 3;
+    }
+
+    function mergeCredentials(target, source) {
+      if (!source) return target;
+      if (!target.accessToken && source.accessToken) target.accessToken = source.accessToken;
+      if (!target.refreshToken && source.refreshToken) target.refreshToken = source.refreshToken;
+      return target;
+    }
+
+    function extractTokensFromObject(data, visited = new WeakSet()) {
+      if (!data || typeof data !== "object") return {};
+      if (visited.has(data)) return {};
+      visited.add(data);
+
+      const credentials = {};
+      const directMap = {
+        accessToken: "accessToken",
+        access_token: "accessToken",
+        id_token: "accessToken",
+        token: "accessToken",
+        refreshToken: "refreshToken",
+        refresh_token: "refreshToken"
+      };
+
+      Object.keys(directMap).forEach((key) => {
+        if (data[key] && !credentials[directMap[key]] && typeof data[key] === "string") {
+          const value = data[key];
+          if (directMap[key] === "accessToken") {
+            if (looksLikeJwt(value)) credentials.accessToken = value;
+          } else {
+            credentials.refreshToken = value;
+          }
+        }
+      });
+
+      if (!credentials.accessToken) {
+        const possibleJwt = Object.values(data).find(
+          (value) => typeof value === "string" && looksLikeJwt(value)
+        );
+        if (possibleJwt) credentials.accessToken = possibleJwt;
+      }
+
+      Object.values(data).forEach((value) => {
+        if (credentials.accessToken && credentials.refreshToken) return;
+        if (value && typeof value === "object") {
+          mergeCredentials(credentials, extractTokensFromObject(value, visited));
+        }
+      });
+
+      return credentials;
+    }
+
+    function extractTokensFromValue(value) {
+      const parsedValue = tryParseJSON(value);
+
+      if (typeof parsedValue === "string") {
+        if (looksLikeJwt(parsedValue)) {
+          return { accessToken: parsedValue };
+        }
+        return {};
+      }
+
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.reduce((accumulator, item) => mergeCredentials(
+          accumulator,
+          extractTokensFromValue(item)
+        ), {});
+      }
+
+      if (parsedValue && typeof parsedValue === "object") {
+        return extractTokensFromObject(parsedValue);
+      }
+
+      return {};
+    }
+
+    function detectCredentialsInStorage(storage) {
+      if (!storage) return null;
+
+      const credentials = {};
+
+      KNOWN_TOKEN_KEYS.forEach((key) => {
+        const value = safeGetItem(storage, key);
+        mergeCredentials(credentials, extractTokensFromValue(value));
+      });
+
+      if (!credentials.accessToken || !credentials.refreshToken) {
+        try {
+          for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            const value = safeGetItem(storage, key);
+            mergeCredentials(credentials, extractTokensFromValue(value));
+            if (credentials.accessToken && credentials.refreshToken) break;
+          }
+        } catch (error) {
+          return credentials.accessToken ? credentials : null;
+        }
+      }
+
+      return credentials.accessToken || credentials.refreshToken ? credentials : null;
+    }
+
+    function getCredentialsFromBrowser() {
       const sources = [];
 
       try {
@@ -118,8 +222,8 @@
       }
 
       for (const storage of sources) {
-        const token = detectTokenInStorage(storage);
-        if (token) return token;
+        const credentials = detectCredentialsInStorage(storage);
+        if (credentials) return credentials;
       }
 
       return null;
@@ -139,18 +243,73 @@
       }
     }
 
+    function base64UrlDecode(segment) {
+      try {
+        const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+        return atob(padded);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function decodeTokenClaims(token) {
+      if (!looksLikeJwt(token)) return {};
+
+      try {
+        const payloadSegment = token.split(".")[1];
+        const decoded = base64UrlDecode(payloadSegment);
+        if (!decoded) return {};
+        return JSON.parse(decoded);
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function resolveEmail(claims) {
+      return claims.email || claims.preferred_username || null;
+    }
+
+    function resolveName(claims) {
+      if (claims.name) return claims.name;
+      if (claims.given_name || claims.family_name) {
+        return [claims.given_name, claims.family_name].filter(Boolean).join(" ").trim() || null;
+      }
+      return claims.preferred_username || claims.email || null;
+    }
+
+    function detectLanguage(claims) {
+      const tokenLanguage = claims.locale || claims.lang || claims.language;
+      if (tokenLanguage) return tokenLanguage;
+      if (document.documentElement && document.documentElement.lang) {
+        return document.documentElement.lang;
+      }
+      return navigator.language || navigator.userLanguage || null;
+    }
+
     function postTokenToIframe() {
       if (!iframe || !iframe.contentWindow) return;
 
-      const token = getTokenFromBrowser();
-      if (!token) return;
+      const credentials = getCredentialsFromBrowser();
+      if (!credentials || !credentials.accessToken) return;
+
+      const claims = decodeTokenClaims(credentials.accessToken);
+      const email = resolveEmail(claims);
+      const name = resolveName(claims);
+      const language = detectLanguage(claims);
 
       const targetOrigin = resolveTargetOrigin(iframe.src);
+      const payload = {
+        embedded: true,
+        type: TOKEN_MESSAGE_TYPE,
+        accessToken: credentials.accessToken,
+        refreshToken: credentials.refreshToken || null,
+        email: email || null,
+        name: name || null,
+        language: language || null
+      };
 
-      iframe.contentWindow.postMessage(
-        { type: TOKEN_MESSAGE_TYPE, token },
-        targetOrigin || "*"
-      );
+      iframe.contentWindow.postMessage(payload, targetOrigin || "*");
     }
 
     function handleIframeLoad() {
