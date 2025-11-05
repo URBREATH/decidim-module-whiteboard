@@ -77,9 +77,9 @@
     ];
     const TOKEN_KEYS = ["accessToken", "access_token", "token"];
     const STORAGE_KEYS = {
-      token: "sd_session_token",
-      email: "sd_session_email",
-      name: "sd_session_name"
+      token: "sd_access_token",
+      email: "sd_access_email",
+      name: "sd_access_name"
     };
     const ALLOWED_PARENTS = [
       window.location.origin,
@@ -127,9 +127,11 @@
       try {
         if ( token && window.sessionStorage ) {
           window.sessionStorage.setItem(STORAGE_KEYS.token, token);
+          window.sessionStorage.removeItem("sd_session_token");
         }
         if ( token && window.localStorage ) {
           window.localStorage.setItem(STORAGE_KEYS.token, token);
+          window.localStorage.removeItem("sd_session_token");
         }
         if ( email && window.localStorage ) {
           window.localStorage.setItem(STORAGE_KEYS.email, email);
@@ -146,7 +148,7 @@
       try {
         const token =
           (window.sessionStorage && window.sessionStorage.getItem(STORAGE_KEYS.token)) ||
-          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
+          (window.localStorage && (window.localStorage.getItem(STORAGE_KEYS.token) || window.localStorage.getItem("sd_session_token")));
         const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
         const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
         return { token, email, name };

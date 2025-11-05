@@ -96,10 +96,11 @@
     var TOKEN_KEYS = ["accessToken", "access_token", "token"];
 
     var STORAGE_KEYS = {
-      token: "sd_session_token",
-      email: "sd_session_email",
-      name: "sd_session_name"
+      token: "sd_access_token",
+      email: "sd_access_email",
+      name: "sd_access_name"
     };
+    var LEGACY_SESSION_TOKEN_KEY = "sd_session_token";
 
     var ALLOWED_PARENTS = [
       window.location.origin,
@@ -137,9 +138,11 @@
       try {
         if (window.sessionStorage) {
           window.sessionStorage.setItem(STORAGE_KEYS.token, bundle.token);
+          window.sessionStorage.removeItem(LEGACY_SESSION_TOKEN_KEY);
         }
         if (window.localStorage) {
           window.localStorage.setItem(STORAGE_KEYS.token, bundle.token);
+          window.localStorage.removeItem(LEGACY_SESSION_TOKEN_KEY);
           if (bundle.email) {
             window.localStorage.setItem(STORAGE_KEYS.email, bundle.email);
           }
@@ -162,11 +165,15 @@
           token =
             window.sessionStorage.getItem(STORAGE_KEYS.token) ||
             window.sessionStorage.getItem("embedded_token") ||
+            window.sessionStorage.getItem(LEGACY_SESSION_TOKEN_KEY) ||
             null;
         }
 
         if (!token && window.localStorage) {
           token = window.localStorage.getItem(STORAGE_KEYS.token);
+          if (!token) {
+            token = window.localStorage.getItem(LEGACY_SESSION_TOKEN_KEY);
+          }
         }
 
         if (window.localStorage) {
