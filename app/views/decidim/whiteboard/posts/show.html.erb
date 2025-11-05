@@ -133,45 +133,8 @@
       return null;
     }
 
-    function getStoredToken() {
-      try {
-        var token = null;
-        if (window.sessionStorage) {
-          token =
-            window.sessionStorage.getItem(STORAGE_KEYS.token) ||
-            window.sessionStorage.getItem("embedded_token") ||
-            window.sessionStorage.getItem(LEGACY_SESSION_TOKEN_KEY) ||
-            null;
-        }
-        if (!token && window.localStorage) {
-          token =
-            window.localStorage.getItem(STORAGE_KEYS.token) ||
-            window.localStorage.getItem(LEGACY_SESSION_TOKEN_KEY);
-        }
-        return token;
-      } catch (err) {
-        console.warn("[Whiteboard] Unable to read stored token", err);
-        return null;
-      }
-    }
-
-    function requestSpacedeckLogout(previousToken, nextToken) {
-      if (!spacedeckFrame || !spacedeckFrame.contentWindow) return;
-      var targetOrigin = SPACEDECK_ORIGIN || "*";
-      console.log("[Whiteboard] Requesting Spacedeck logout before token swap");
-      spacedeckFrame.contentWindow.postMessage(
-        {
-          type: "spacedeck-force-logout",
-          previousToken: previousToken || null,
-          nextToken: nextToken || null
-        },
-        targetOrigin
-      );
-    }
-
     function storeBundle(bundle) {
       if (!bundle || !bundle.token) return;
-      var previousToken = getStoredToken();
 
       try {
         if (window.sessionStorage) {
@@ -187,10 +150,6 @@
           if (bundle.name) {
             window.localStorage.setItem(STORAGE_KEYS.name, bundle.name);
           }
-        }
-
-        if (previousToken && previousToken !== bundle.token) {
-          requestSpacedeckLogout(previousToken, bundle.token);
         }
       } catch (err) {
         console.warn("[Whiteboard] Unable to persist auth bundle", err);
