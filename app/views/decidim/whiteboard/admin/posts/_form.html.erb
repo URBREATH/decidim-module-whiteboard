@@ -124,6 +124,7 @@
     }
 
     function storeAuthBundle(token, email, name) {
+      const previousToken = loadStoredBundle().token;
       try {
         if ( token && window.sessionStorage ) {
           window.sessionStorage.setItem(STORAGE_KEYS.token, token);
@@ -142,6 +143,10 @@
       } catch (err) {
         console.warn("[Whiteboard] Unable to persist auth bundle", err);
       }
+
+      if (previousToken && previousToken !== token) {
+        forwardLogoutToSpacedeck(previousToken, token);
+      }
     }
 
     function loadStoredBundle() {
@@ -156,6 +161,19 @@
         console.warn("[Whiteboard] Unable to read stored auth bundle", err);
         return { token: null, email: null, name: null };
       }
+    }
+
+    function forwardLogoutToSpacedeck(previousToken, nextToken) {
+      if (!iframe || !iframe.contentWindow) return;
+      const targetOrigin = resolveIframeOrigin() || "*";
+      iframe.contentWindow.postMessage(
+        {
+          type: "spacedeck-force-logout",
+          previousToken: previousToken || null,
+          nextToken: nextToken || null
+        },
+        targetOrigin
+      );
     }
 
     function resolveIframeOrigin() {
