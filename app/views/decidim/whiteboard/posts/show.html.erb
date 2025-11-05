@@ -25,10 +25,13 @@
   
     <div style="width: 100%">
     <section class="iframe layout-main__section">
-        <iframe src="<%= @iframe_src %>" style="width: 100%"
-                height="<%= @iframe_height %>"
-                frameborder="0"
-                allowfullscreen>
+        <iframe
+          id="whiteboard-spacedeck-frame"
+          src="<%= @iframe_src %>"
+          style="width: 100%"
+          height="<%= @iframe_height %>"
+          frameborder="0"
+          allowfullscreen>
         </iframe>
     </section>
   </main>
@@ -66,3 +69,257 @@
     <%= comments_for post %>
   </section>
 <% end %>
+
+<script>
+  (function () {
+    var spacedeckFrame = document.getElementById("whiteboard-spacedeck-frame");
+    if (!spacedeckFrame) return;
+
+    var SPACEDECK_ORIGIN = (function () {
+      try {
+        return new URL(spacedeckFrame.src).origin;
+      } catch (err) {
+        try {
+          return new URL(spacedeckFrame.src, window.location.href).origin;
+        } catch (err2) {
+          return null;
+        }
+      }
+    })();
+
+    var TOKEN_MESSAGE_TYPES = [
+      "spacedeck-token",
+      "spacedeck-embedded-auth",
+      "decidim:whiteboard:setToken"
+    ];
+
+    var TOKEN_KEYS = ["accessToken", "access_token", "token"];
+
+    var STORAGE_KEYS = {
+      token: "sd_session_token",
+      email: "sd_session_email",
+      name: "sd_session_name"
+    };
+
+    var ALLOWED_PARENTS = [
+      window.location.origin,
+      "https://dashboard-dev.urbreath.tech",
+      "https://decidim-dev.urbreath.tech",
+      "http://localhost:3001",
+      "http://localhost:3001/testIframe.html"
+    ];
+
+    var forwardedHandshake = false;
+
+    function isSpacedeckOrigin(origin) {
+      return SPACEDECK_ORIGIN && origin === SPACEDECK_ORIGIN;
+    }
+
+    function originAllowed(origin) {
+      if (!origin) return false;
+      if (isSpacedeckOrigin(origin)) return true;
+      return ALLOWED_PARENTS.indexOf(origin) !== -1;
+    }
+
+    function pickToken(data) {
+      for (var i = 0; i < TOKEN_KEYS.length; i += 1) {
+        var key = TOKEN_KEYS[i];
+        if (data && typeof data === "object" && data[key]) {
+          return data[key];
+        }
+      }
+      return null;
+    }
+
+    function storeBundle(bundle) {
+      if (!bundle || !bundle.token) return;
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.setItem(STORAGE_KEYS.token, bundle.token);
+        }
+        if (window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.token, bundle.token);
+          if (bundle.email) {
+            window.localStorage.setItem(STORAGE_KEYS.email, bundle.email);
+          }
+          if (bundle.name) {
+            window.localStorage.setItem(STORAGE_KEYS.name, bundle.name);
+          }
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to persist auth bundle", err);
+      }
+    }
+
+    function loadBundle() {
+      try {
+        var token = null;
+        var email = null;
+        var name = null;
+
+        if (window.sessionStorage) {
+          token =
+            window.sessionStorage.getItem(STORAGE_KEYS.token) ||
+            window.sessionStorage.getItem("embedded_token") ||
+            null;
+        }
+
+        if (!token && window.localStorage) {
+          token = window.localStorage.getItem(STORAGE_KEYS.token);
+        }
+
+        if (window.localStorage) {
+          email = window.localStorage.getItem(STORAGE_KEYS.email);
+          name = window.localStorage.getItem(STORAGE_KEYS.name);
+        }
+
+        if (!email && window.sessionStorage) {
+          email =
+            window.sessionStorage.getItem("embedded_email") ||
+            window.sessionStorage.getItem("decidim_user_email") ||
+            null;
+        }
+
+        if (!name && window.sessionStorage) {
+          name =
+            window.sessionStorage.getItem("embedded_name") ||
+            window.sessionStorage.getItem("decidim_user_name") ||
+            null;
+        }
+
+        return { token: token, email: email, name: name };
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to read stored auth bundle", err);
+        return { token: null, email: null, name: null };
+      }
+    }
+
+    function forwardToSpacedeck(bundle) {
+      if (!bundle || !bundle.token) return;
+      if (!spacedeckFrame.contentWindow) return;
+      var targetOrigin = SPACEDECK_ORIGIN || "*";
+      console.log(
+        "[Whiteboard] Forwarding token to Spacedeck",
+        targetOrigin,
+        bundle.email || "(anonymous)"
+      );
+      spacedeckFrame.contentWindow.postMessage(
+        {
+          embedded: true,
+          accessToken: bundle.token,
+          email: bundle.email || undefined,
+          name: bundle.name || undefined
+        },
+        targetOrigin
+      );
+    }
+
+    function requestParentToken() {
+      if (!window.parent || window.parent === window) return;
+
+      var message = {
+        type: "spacedeck-auth-request",
+        parentOrigin: window.location.origin
+      };
+
+      try {
+        if (ALLOWED_PARENTS.length) {
+          ALLOWED_PARENTS.forEach(function (origin) {
+            window.parent.postMessage(message, origin);
+          });
+        } else {
+          window.parent.postMessage(message, "*");
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to propagate handshake upstream", err);
+      }
+    }
+
+    function handleHandshake(event) {
+      if (forwardedHandshake) {
+        console.log("[Whiteboard] Handshake replay from Spacedeck");
+        var replayBundle = loadBundle();
+        if (replayBundle && replayBundle.token) {
+          storeBundle(replayBundle);
+        }
+        forwardToSpacedeck(replayBundle);
+        return;
+      }
+
+      forwardedHandshake = true;
+      console.log("[Whiteboard] Spacedeck requested token via handshake");
+      var bundle = loadBundle();
+      if (bundle && bundle.token) {
+        storeBundle(bundle);
+        forwardToSpacedeck(bundle);
+      } else {
+        console.warn("[Whiteboard] Handshake received but no token cached locally");
+      }
+      requestParentToken();
+    }
+
+    function handleMessage(event) {
+      var origin = event.origin;
+      var data = event.data;
+
+      if (data && data.type === "spacedeck-auth-request" && isSpacedeckOrigin(origin)) {
+        handleHandshake(event);
+        return;
+      }
+
+      if (!originAllowed(origin)) return;
+
+      if (!data || typeof data !== "object") return;
+
+      var expected =
+        data.embedded === true ||
+        (data.type && TOKEN_MESSAGE_TYPES.indexOf(data.type) !== -1);
+
+      if (!expected) return;
+
+      var token = pickToken(data);
+      if (!token) return;
+
+      var email =
+        data.email ||
+        (data.user && data.user.email) ||
+        data.username ||
+        data.userEmail ||
+        null;
+
+      var name =
+        data.name ||
+        (data.user && (data.user.name || data.user.displayName)) ||
+        data.fullName ||
+        data.preferred_username ||
+        (email ? email.split("@")[0] : null);
+
+      var bundle = { token: token, email: email, name: name };
+      console.log(
+        "[Whiteboard] Received token bundle from parent",
+        origin,
+        email || "(no email)"
+      );
+      storeBundle(bundle);
+      forwardToSpacedeck(bundle);
+    }
+
+    window.addEventListener("message", handleMessage);
+
+    spacedeckFrame.addEventListener("load", function () {
+      var bundle = loadBundle();
+      if (bundle && bundle.token) {
+        storeBundle(bundle);
+      }
+      forwardToSpacedeck(bundle);
+    });
+
+    (function initialForward() {
+      var bundle = loadBundle();
+      if (bundle && bundle.token) {
+        storeBundle(bundle);
+      }
+      forwardToSpacedeck(bundle);
+    })();
+  })();
+</script>

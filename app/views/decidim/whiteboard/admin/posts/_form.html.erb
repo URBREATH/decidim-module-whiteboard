@@ -48,10 +48,12 @@
       <div id="iframeModal" class="custom-modal" style="display: none;">
         <div class="custom-modal-content">
           <span id="closeIframeModal" class="custom-modal-close">&times;</span>
-          <iframe id="iframePreview"
-                  src=""
-                  allowfullscreen>
-          </iframe>
+          <div class="iframe-preview-wrapper">
+            <iframe id="iframePreview"
+                    src=""
+                    allowfullscreen>
+            </iframe>
+          </div>
         </div>
       </div>
 
@@ -67,282 +69,167 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
-    const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
-    const TOKEN_MESSAGE_TYPE = "spacedeck-token";
-    const KNOWN_TOKEN_KEYS = [
-      "whiteboardToken",
-      "spacedeckToken",
-      "token",
-      "accessToken",
-      "access_token",
-      "keycloak",
-      "kcTokens",
-      "oidc.user"
+    const DEFAULT_IFRAME_URL = "http://localhost:9666";
+    const TOKEN_MESSAGE_TYPES = [
+      "spacedeck-token",
+      "spacedeck-embedded-auth",
+      "decidim:whiteboard:setToken"
     ];
-    // Base information from the Decidim session, used if token decoding fails
-    const DECIDIM_USER_DATA = Object.freeze(<%= raw({
-      email: current_user&.email,
-      name: current_user&.name,
-      language: ((current_user&.locale).presence || I18n.locale).to_s,
-      refreshToken: current_user&.try(:whiteboard_refresh_token)
-    }.to_json) %>);
+    const TOKEN_KEYS = ["accessToken", "access_token", "token"];
+    const STORAGE_KEYS = {
+      token: "sd_session_token",
+      email: "sd_session_email",
+      name: "sd_session_name"
+    };
+    const ALLOWED_PARENTS = [
+      window.location.origin,
+      "https://dashboard-dev.urbreath.tech",
+      "https://decidim-dev.urbreath.tech",
+      "http://localhost:3001",               
+      "http://localhost:3001/testIframe.html"
+    ];
 
-    function safeGetItem(storage, key) {
-      try {
-        return storage.getItem(key);
-      } catch (error) {
-        return null;
-      }
+    function openModal() {
+      const iframeUrl = input.value.trim() || DEFAULT_IFRAME_URL;
+      iframe.src = iframeUrl;
+      modal.style.display = "flex";
     }
 
-    function tryParseJSON(value) {
-      if (typeof value !== "string") return value;
-      const trimmed = value.trim();
-      if (!trimmed) return value;
-      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-        try {
-          return JSON.parse(trimmed);
-        } catch (error) {
-          return value;
+    function closeModal() {
+      modal.style.display = "none";
+      iframe.src = ""; // scarica l’iframe
+    }
+
+    openBtn.addEventListener("click", openModal);
+    closeBtn.addEventListener("click", closeModal);
+
+    window.addEventListener("click", function(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    function originAllowed(origin) {
+      return ALLOWED_PARENTS.indexOf(origin) !== -1;
+    }
+
+    function pickToken(data) {
+      for (const key of TOKEN_KEYS) {
+        if (data && typeof data === "object" && data[key]) {
+          return data[key];
         }
       }
-      return value;
-    }
-
-    function looksLikeJwt(value) {
-      return typeof value === "string" && value.split(".").length === 3;
-    }
-
-    function mergeCredentials(target, source) {
-      if (!source) return target;
-      if (!target.accessToken && source.accessToken) target.accessToken = source.accessToken;
-      if (!target.refreshToken && source.refreshToken) target.refreshToken = source.refreshToken;
-      return target;
-    }
-
-    function extractTokensFromObject(data, visited = new WeakSet()) {
-      if (!data || typeof data !== "object") return {};
-      if (visited.has(data)) return {};
-      visited.add(data);
-
-      const credentials = {};
-      const directMap = {
-        accessToken: "accessToken",
-        access_token: "accessToken",
-        id_token: "accessToken",
-        token: "accessToken",
-        refreshToken: "refreshToken",
-        refresh_token: "refreshToken"
-      };
-
-      Object.keys(directMap).forEach((key) => {
-        if (data[key] && !credentials[directMap[key]] && typeof data[key] === "string") {
-          const value = data[key];
-          if (directMap[key] === "accessToken") {
-            if (looksLikeJwt(value)) credentials.accessToken = value;
-          } else {
-            credentials.refreshToken = value;
-          }
-        }
-      });
-
-      if (!credentials.accessToken) {
-        const possibleJwt = Object.values(data).find(
-          (value) => typeof value === "string" && looksLikeJwt(value)
-        );
-        if (possibleJwt) credentials.accessToken = possibleJwt;
-      }
-
-      Object.values(data).forEach((value) => {
-        if (credentials.accessToken && credentials.refreshToken) return;
-        if (value && typeof value === "object") {
-          mergeCredentials(credentials, extractTokensFromObject(value, visited));
-        }
-      });
-
-      return credentials;
-    }
-
-    function extractTokensFromValue(value) {
-      const parsedValue = tryParseJSON(value);
-
-      if (typeof parsedValue === "string") {
-        if (looksLikeJwt(parsedValue)) {
-          return { accessToken: parsedValue };
-        }
-        return {};
-      }
-
-      if (Array.isArray(parsedValue)) {
-        return parsedValue.reduce((accumulator, item) => mergeCredentials(
-          accumulator,
-          extractTokensFromValue(item)
-        ), {});
-      }
-
-      if (parsedValue && typeof parsedValue === "object") {
-        return extractTokensFromObject(parsedValue);
-      }
-
-      return {};
-    }
-
-    function detectCredentialsInStorage(storage) {
-      if (!storage) return null;
-
-      const credentials = {};
-
-      KNOWN_TOKEN_KEYS.forEach((key) => {
-        const value = safeGetItem(storage, key);
-        mergeCredentials(credentials, extractTokensFromValue(value));
-      });
-
-      if (!credentials.accessToken || !credentials.refreshToken) {
-        try {
-          for (let index = 0; index < storage.length; index += 1) {
-            const key = storage.key(index);
-            const value = safeGetItem(storage, key);
-            mergeCredentials(credentials, extractTokensFromValue(value));
-            if (credentials.accessToken && credentials.refreshToken) break;
-          }
-        } catch (error) {
-          return credentials.accessToken ? credentials : null;
-        }
-      }
-
-      return credentials.accessToken || credentials.refreshToken ? credentials : null;
-    }
-
-    function getCredentialsFromBrowser() {
-      const sources = [];
-
-      try {
-        if (window.localStorage) sources.push(window.localStorage);
-      } catch (error) {
-        // ignore access issues
-      }
-
-      try {
-        if (window.sessionStorage) sources.push(window.sessionStorage);
-      } catch (error) {
-        // ignore access issues
-      }
-
-      for (const storage of sources) {
-        const credentials = detectCredentialsInStorage(storage);
-        if (credentials) return credentials;
-      }
-
       return null;
     }
 
-    function resolveTargetOrigin(url) {
-      if (!url) return "*";
-
+    function storeAuthBundle(token, email, name) {
       try {
-        return new URL(url).origin;
-      } catch (firstError) {
+        if ( token && window.sessionStorage ) {
+          window.sessionStorage.setItem(STORAGE_KEYS.token, token);
+        }
+        if ( token && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.token, token);
+        }
+        if ( email && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.email, email);
+        }
+        if ( name && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.name, name);
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to persist auth bundle", err);
+      }
+    }
+
+    function loadStoredBundle() {
+      try {
+        const token =
+          (window.sessionStorage && window.sessionStorage.getItem(STORAGE_KEYS.token)) ||
+          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
+        const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
+        const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
+        return { token, email, name };
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to read stored auth bundle", err);
+        return { token: null, email: null, name: null };
+      }
+    }
+
+    function resolveIframeOrigin() {
+      try {
+        return new URL(iframe.src).origin;
+      } catch (err) {
         try {
-          return new URL(url, window.location.href).origin;
-        } catch (secondError) {
-          return "*";
+          return iframe.src ? new URL(iframe.src, window.location.href).origin : null;
+        } catch (secondErr) {
+          return null;
         }
       }
     }
 
-    function base64UrlDecode(segment) {
-      try {
-        const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
-        const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
-        return atob(padded);
-      } catch (error) {
-        return null;
-      }
-    }
-
-    function decodeTokenClaims(token) {
-      if (!looksLikeJwt(token)) return {};
-
-      try {
-        const payloadSegment = token.split(".")[1];
-        const decoded = base64UrlDecode(payloadSegment);
-        if (!decoded) return {};
-        return JSON.parse(decoded);
-      } catch (error) {
-        return {};
-      }
-    }
-
-    function resolveEmail(claims) {
-      return claims.email || claims.preferred_username || null;
-    }
-
-    function resolveName(claims) {
-      if (claims.name) return claims.name;
-      if (claims.given_name || claims.family_name) {
-        return [claims.given_name, claims.family_name].filter(Boolean).join(" ").trim() || null;
-      }
-      return claims.preferred_username || claims.email || null;
-    }
-
-    function detectLanguage(claims) {
-      const tokenLanguage = claims.locale || claims.lang || claims.language;
-      if (tokenLanguage) return tokenLanguage;
-      if (document.documentElement && document.documentElement.lang) {
-        return document.documentElement.lang;
-      }
-      return navigator.language || navigator.userLanguage || null;
-    }
-
-    function postTokenToIframe() {
+    function forwardTokenToSpacedeck(bundle) {
       if (!iframe || !iframe.contentWindow) return;
+      if (!bundle || !bundle.token) return;
 
-      const credentials = getCredentialsFromBrowser() || {};
-      const accessToken = credentials.accessToken || null;
-      const claims = accessToken ? decodeTokenClaims(accessToken) : {};
-      const email = resolveEmail(claims) || DECIDIM_USER_DATA.email || null;
-      const name = resolveName(claims) || DECIDIM_USER_DATA.name || null;
-      const language = detectLanguage(claims) || DECIDIM_USER_DATA.language || null;
-      const refreshToken = credentials.refreshToken || DECIDIM_USER_DATA.refreshToken || null;
+      const targetOrigin = resolveIframeOrigin() || "*";
 
-      const targetOrigin = resolveTargetOrigin(iframe.src);
-      const payload = {
-        embedded: true,
-        type: TOKEN_MESSAGE_TYPE,
-        accessToken,
-        refreshToken,
-        email,
-        name,
-        language
-      };
-
-      iframe.contentWindow.postMessage(payload, targetOrigin || "*");
+      iframe.contentWindow.postMessage(
+        {
+          embedded: true,
+          accessToken: bundle.token,
+          email: bundle.email || undefined,
+          name: bundle.name || undefined
+        },
+        targetOrigin
+      );
     }
 
-    function handleIframeLoad() {
-      postTokenToIframe();
+    function handleAuthMessage(event) {
+      if (!originAllowed(event.origin)) return;
+
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+
+      const isExpectedType =
+        data.embedded === true ||
+        (data.type && TOKEN_MESSAGE_TYPES.includes(data.type));
+
+      if (!isExpectedType) return;
+
+      const token = pickToken(data);
+      if (!token) return;
+
+      const email =
+        data.email ||
+        (data.user && data.user.email) ||
+        data.username ||
+        data.userEmail ||
+        null;
+
+      const name =
+        data.name ||
+        (data.user && (data.user.name || data.user.displayName)) ||
+        data.fullName ||
+        data.preferred_username ||
+        (email ? email.split("@")[0] : null);
+
+      storeAuthBundle(token, email, name);
+      forwardTokenToSpacedeck({ token, email, name });
     }
 
-    openBtn.addEventListener("click", function() {
-      const iframeUrl = input.value.trim() || DEFAULT_IFRAME_URL;
+    window.addEventListener("message", handleAuthMessage);
 
-      iframe.addEventListener("load", handleIframeLoad, { once: true });
-      iframe.src = iframeUrl;
-
-      modal.style.display = "flex";
-    });
-
-    closeBtn.addEventListener("click", function() {
-      modal.style.display = "none";
-      iframe.src = ""; // scarica l’iframe
-    });
-
-    window.addEventListener("click", function(e) {
-      if (e.target === modal) {
-        modal.style.display = "none";
-        iframe.src = "";
+    iframe.addEventListener("load", function () {
+      const bundle = loadStoredBundle();
+      if (bundle && bundle.token) {
+        forwardTokenToSpacedeck(bundle);
       }
     });
+
+    const initialBundle = loadStoredBundle();
+    if (initialBundle && initialBundle.token && iframe.contentWindow) {
+      forwardTokenToSpacedeck(initialBundle);
+    }
   });
 </script>
 
@@ -389,13 +276,22 @@
     color: #000;
   }
 
-  #iframePreview {
+  .iframe-preview-wrapper {
     flex: 1;
     width: 100%;
     max-width: 1800px;
     height: 100%;
     margin: 0 auto;
-    display: block;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #iframePreview {
+    width: calc(100% / 0.85);
+    height: calc(100% / 0.85);
     border: none;
+    transform: scale(0.85);
+    transform-origin: top center;
+    display: block;
   }
 </style>

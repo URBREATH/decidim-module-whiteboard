@@ -39,7 +39,7 @@ module Decidim
         def allow_spacedeck_iframe
           content_security_policy.append_csp_directive(
             "frame-src",
-            "https://spacedeck-dev.urbreath.tech https://keycloak-dev.urbreath.tech",
+            "https://spacedeck-dev.urbreath.tech https://keycloak-dev.urbreath.tech http://localhost:9666",
           )
         end
 
