@@ -79,7 +79,8 @@
     const STORAGE_KEYS = {
       token: "sd_session_token",
       email: "sd_session_email",
-      name: "sd_session_name"
+      name: "sd_session_name",
+      userId: "sd_session_user_id"
     };
     const ALLOWED_PARENTS = [
       window.location.origin,
@@ -90,6 +91,11 @@
       "http://localhost:3001/testIframe.html",
       "https://community_demo.road-steamer.eu"
     ];
+    const CURRENT_DECIDIM_USER = {
+      id: <%= current_user&.id ? current_user.id.to_json : "null" %>,
+      email: <%= current_user&.email ? current_user.email.to_json : "null" %>,
+      name: <%= current_user&.name ? current_user.name.to_json : "null" %>
+    };
 
     function openModal() {
       const iframeUrl = input.value.trim() || DEFAULT_IFRAME_URL;
@@ -124,19 +130,82 @@
       return null;
     }
 
-    function storeAuthBundle(token, email, name) {
+    function withCurrentUser(bundle) {
+      if (!bundle || typeof bundle !== "object") return bundle;
+      const enriched = { ...bundle };
+      if (CURRENT_DECIDIM_USER.email) {
+        enriched.email = CURRENT_DECIDIM_USER.email;
+      }
+      if (CURRENT_DECIDIM_USER.name) {
+        enriched.name = CURRENT_DECIDIM_USER.name;
+      }
+      if (CURRENT_DECIDIM_USER.id) {
+        enriched.userId = String(CURRENT_DECIDIM_USER.id);
+      }
+      return enriched;
+    }
+
+    function persistCurrentUserProfile() {
       try {
-        if ( token && window.sessionStorage ) {
-          window.sessionStorage.setItem(STORAGE_KEYS.token, token);
+        if (window.localStorage && CURRENT_DECIDIM_USER.id) {
+          window.localStorage.setItem(STORAGE_KEYS.userId, String(CURRENT_DECIDIM_USER.id));
         }
-        if ( token && window.localStorage ) {
-          window.localStorage.setItem(STORAGE_KEYS.token, token);
+        if (window.localStorage && CURRENT_DECIDIM_USER.email) {
+          window.localStorage.setItem(STORAGE_KEYS.email, CURRENT_DECIDIM_USER.email);
         }
-        if ( email && window.localStorage ) {
-          window.localStorage.setItem(STORAGE_KEYS.email, email);
+        if (window.localStorage && CURRENT_DECIDIM_USER.name) {
+          window.localStorage.setItem(STORAGE_KEYS.name, CURRENT_DECIDIM_USER.name);
         }
-        if ( name && window.localStorage ) {
-          window.localStorage.setItem(STORAGE_KEYS.name, name);
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to persist current user profile", err);
+      }
+    }
+
+    function hasUserChanged(bundle) {
+      const storedUserId = bundle && bundle.userId ? String(bundle.userId) : null;
+      const storedEmail = bundle && bundle.email ? String(bundle.email) : null;
+      const currentUserId = CURRENT_DECIDIM_USER.id ? String(CURRENT_DECIDIM_USER.id) : null;
+      const currentEmail = CURRENT_DECIDIM_USER.email || null;
+
+      if (currentUserId && storedUserId && storedUserId !== currentUserId) return true;
+      if (currentEmail && storedEmail && storedEmail !== currentEmail) return true;
+      return false;
+    }
+
+    function clearStoredBundle() {
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.removeItem(STORAGE_KEYS.token);
+        }
+        if (window.localStorage) {
+          window.localStorage.removeItem(STORAGE_KEYS.token);
+          window.localStorage.removeItem(STORAGE_KEYS.email);
+          window.localStorage.removeItem(STORAGE_KEYS.name);
+          window.localStorage.removeItem(STORAGE_KEYS.userId);
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to clear stored auth bundle", err);
+      }
+    }
+
+    function storeAuthBundle(bundle) {
+      if (!bundle || !bundle.token) return;
+      const enriched = withCurrentUser(bundle);
+      try {
+        if (enriched.userId && window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.userId, enriched.userId);
+        }
+        if ( enriched.token && window.sessionStorage ) {
+          window.sessionStorage.setItem(STORAGE_KEYS.token, enriched.token);
+        }
+        if ( enriched.token && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.token, enriched.token);
+        }
+        if ( enriched.email && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.email, enriched.email);
+        }
+        if ( enriched.name && window.localStorage ) {
+          window.localStorage.setItem(STORAGE_KEYS.name, enriched.name);
         }
       } catch (err) {
         console.warn("[Whiteboard] Unable to persist auth bundle", err);
@@ -150,10 +219,11 @@
           (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
         const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
         const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
-        return { token, email, name };
+        const userId = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.userId) : null;
+        return { token, email, name, userId };
       } catch (err) {
         console.warn("[Whiteboard] Unable to read stored auth bundle", err);
-        return { token: null, email: null, name: null };
+        return { token: null, email: null, name: null, userId: null };
       }
     }
 
@@ -173,14 +243,16 @@
       if (!iframe || !iframe.contentWindow) return;
       if (!bundle || !bundle.token) return;
 
+      const enriched = withCurrentUser(bundle);
+
       const targetOrigin = resolveIframeOrigin() || "*";
 
       iframe.contentWindow.postMessage(
         {
           embedded: true,
-          accessToken: bundle.token,
-          email: bundle.email || undefined,
-          name: bundle.name || undefined
+          accessToken: enriched.token,
+          email: enriched.email || undefined,
+          name: enriched.name || undefined
         },
         targetOrigin
       );
@@ -215,20 +287,28 @@
         data.preferred_username ||
         (email ? email.split("@")[0] : null);
 
-      storeAuthBundle(token, email, name);
-      forwardTokenToSpacedeck({ token, email, name });
+      const bundle = withCurrentUser({ token, email, name });
+
+      storeAuthBundle(bundle);
+      forwardTokenToSpacedeck(bundle);
     }
 
     window.addEventListener("message", handleAuthMessage);
 
+    const cachedBundle = loadStoredBundle();
+    if (hasUserChanged(cachedBundle)) {
+      clearStoredBundle();
+    }
+    persistCurrentUserProfile();
+
     iframe.addEventListener("load", function () {
-      const bundle = loadStoredBundle();
+      const bundle = withCurrentUser(loadStoredBundle());
       if (bundle && bundle.token) {
         forwardTokenToSpacedeck(bundle);
       }
     });
 
-    const initialBundle = loadStoredBundle();
+    const initialBundle = withCurrentUser(loadStoredBundle());
     if (initialBundle && initialBundle.token && iframe.contentWindow) {
       forwardTokenToSpacedeck(initialBundle);
     }
