@@ -69,6 +69,12 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
+
+    if (!modal || !openBtn || !closeBtn || !iframe || !input) {
+      console.warn("[Whiteboard] iframe modal elements not found, aborting modal wiring");
+      return;
+    }
+
     const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
