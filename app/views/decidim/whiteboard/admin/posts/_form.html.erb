@@ -69,12 +69,6 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
-
-    if (!modal || !openBtn || !closeBtn || !iframe || !input) {
-      console.warn("[Whiteboard] iframe modal elements not found, aborting modal wiring");
-      return;
-    }
-
     const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
@@ -87,8 +81,6 @@
       email: "sd_session_email",
       name: "sd_session_name"
     };
-    const CURRENT_USER_EMAIL = <%= (current_user&.email || "").to_json %>;
-    const CURRENT_USER_NAME = <%= (current_user&.name || "").to_json %>;
     const ALLOWED_PARENTS = [
       window.location.origin,
       "https://dashboard-dev.urbreath.tech",
@@ -156,14 +148,8 @@
         const token =
           (window.sessionStorage && window.sessionStorage.getItem(STORAGE_KEYS.token)) ||
           (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
-        const email =
-          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.email)) ||
-          CURRENT_USER_EMAIL ||
-          null;
-        const name =
-          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.name)) ||
-          CURRENT_USER_NAME ||
-          null;
+        const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
+        const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
         return { token, email, name };
       } catch (err) {
         console.warn("[Whiteboard] Unable to read stored auth bundle", err);
@@ -193,14 +179,8 @@
         {
           embedded: true,
           accessToken: bundle.token,
-          email: bundle.email || CURRENT_USER_EMAIL || undefined,
-          name: bundle.name || CURRENT_USER_NAME || undefined,
-          userEmail: bundle.email || CURRENT_USER_EMAIL || undefined,
-          userName: bundle.name || CURRENT_USER_NAME || undefined,
-          user: {
-            email: bundle.email || CURRENT_USER_EMAIL || undefined,
-            name: bundle.name || CURRENT_USER_NAME || undefined
-          }
+          email: bundle.email || undefined,
+          name: bundle.name || undefined
         },
         targetOrigin
       );
@@ -233,7 +213,7 @@
         (data.user && (data.user.name || data.user.displayName)) ||
         data.fullName ||
         data.preferred_username ||
-        (email ? email.split("@")[0] : CURRENT_USER_NAME || null);
+        (email ? email.split("@")[0] : null);
 
       storeAuthBundle(token, email, name);
       forwardTokenToSpacedeck({ token, email, name });
