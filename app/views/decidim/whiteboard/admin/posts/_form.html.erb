@@ -221,7 +221,7 @@
         lastSentSignature = signature;
       }
 
-      const targetOrigin = resolveIframeOrigin() || "*";
+      const targetOrigin = "*";
 
       iframe.contentWindow.postMessage(
         {

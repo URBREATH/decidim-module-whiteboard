@@ -222,7 +222,7 @@
         if (signature === lastSentSignature && !reason) return;
         lastSentSignature = signature;
       }
-      var targetOrigin = SPACEDECK_ORIGIN || "*";
+      var targetOrigin = "*";
       spacedeckFrame.contentWindow.postMessage(
         {
           embedded: true,
