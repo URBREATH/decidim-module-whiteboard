@@ -24,6 +24,7 @@
       <div class="row align-middle">
         <div class="columns small-8">
           <%= form.text_field :iframe_src, id: "iframe_src_field", label: "URL" %>
+          <div id="iframeUrlFeedback" class="iframe-url-feedback" style="display:none;"></div>
         </div>
         <div class="columns small-4 text-right">
           <button type="button" id="openIframeModal" class="button button__sm button__secondary">
@@ -69,6 +70,7 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
+    const urlFeedback = document.getElementById("iframeUrlFeedback");
     const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/spaces";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
@@ -173,6 +175,10 @@
     });
 
     function originAllowed(origin) {
+      if (!origin) return false;
+      // consenti sempre i messaggi dall'iframe spacedeck attuale
+      const iframeOrigin = resolveIframeOrigin();
+      if (iframeOrigin && origin === iframeOrigin) return true;
       return ALLOWED_PARENTS.indexOf(origin) !== -1;
     }
 
@@ -243,6 +249,15 @@
       return [bundle.token, userId, email, name].join("|");
     }
 
+    function showUrlFeedback(message) {
+      if (!urlFeedback) return;
+      urlFeedback.textContent = message;
+      urlFeedback.style.display = "block";
+      setTimeout(function () {
+        urlFeedback.style.display = "none";
+      }, 3000);
+    }
+
     function forwardTokenToSpacedeck(bundle, reason) {
       if (!iframe || !iframe.contentWindow) return;
       if (!bundle) return;
@@ -282,6 +297,15 @@
 
         const data = event.data;
         if (!data || typeof data !== "object") return;
+
+        if (data.type === "spacedeck-select-space" && data.url) {
+          if (input) {
+            input.value = data.url;
+          }
+          closeModal();
+          showUrlFeedback("URL impostato da Spacedeck");
+          return;
+        }
 
         const isExpectedType =
           data.embedded === true ||
@@ -392,6 +416,12 @@
     border: none;
     display: block;
     background: #fff;
+  }
+
+  .iframe-url-feedback {
+    margin-top: 6px;
+    font-size: 0.9rem;
+    color: #2f855a;
   }
 
   @supports (aspect-ratio: 16 / 9) {
