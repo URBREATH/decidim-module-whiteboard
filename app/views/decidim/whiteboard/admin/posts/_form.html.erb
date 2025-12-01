@@ -109,8 +109,17 @@
 
     function forceLogoutSpacedeck() {
       if (!iframe || !iframe.contentWindow) return;
+      const cached = loadStoredBundle();
+      const payload = {
+        type: "spacedeck-force-logout"
+      };
+      if (cached && cached.token) {
+        payload.nextToken = cached.token;
+        payload.email = cached.email || undefined;
+        payload.name = cached.name || undefined;
+      }
       try {
-        iframe.contentWindow.postMessage({ type: "spacedeck-force-logout" }, "*");
+        iframe.contentWindow.postMessage(payload, "*");
       } catch (err) {
         console.warn("[Whiteboard] Unable to force logout Spacedeck iframe", err);
       }
