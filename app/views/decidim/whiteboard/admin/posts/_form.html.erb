@@ -73,9 +73,10 @@
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
       "spacedeck-embedded-auth",
-      "decidim:whiteboard:setToken"
+      "decidim:whiteboard:setToken",
+      "spacedeck-force-logout"
     ];
-    const TOKEN_KEYS = ["accessToken", "access_token", "token"];
+    const TOKEN_KEYS = ["accessToken", "access_token", "token", "nextToken"];
     const STORAGE_KEYS = {
       token: "sd_session_token",
       email: "sd_session_email",
@@ -210,12 +211,15 @@
 
     function forwardTokenToSpacedeck(bundle, reason) {
       if (!iframe || !iframe.contentWindow) return;
-      if (!bundle || !bundle.token) return;
+      if (!bundle) return;
+      const isForceLogout = bundle.type === "spacedeck-force-logout";
+      if (!bundle.token && !isForceLogout) return;
 
-      const signature = bundleSignature(bundle);
-      if (!signature) return;
-      if (signature === lastSentSignature && !reason) return;
-      lastSentSignature = signature;
+      const signature = isForceLogout && !bundle.token ? null : bundleSignature(bundle);
+      if (signature) {
+        if (signature === lastSentSignature && !reason) return;
+        lastSentSignature = signature;
+      }
 
       const targetOrigin = resolveIframeOrigin() || "*";
 
@@ -224,7 +228,8 @@
           embedded: true,
           accessToken: bundle.token,
           email: bundle.email || undefined,
-          name: bundle.name || undefined
+          name: bundle.name || undefined,
+          type: bundle.type
         },
         targetOrigin
       );
@@ -251,7 +256,7 @@
         if (!isExpectedType) return;
 
         const token = pickToken(data);
-        if (!token) return;
+        if (!token && data.type !== "spacedeck-force-logout") return;
 
         const email =
           data.email ||
@@ -268,7 +273,7 @@
           (email ? email.split("@")[0] : null);
 
         const userId = data.userId || data.user_id || null;
-        const bundle = { token, email, name, userId };
+        const bundle = { token, email, name, userId, type: data.type };
 
         storeAuthBundle(bundle);
         forwardTokenToSpacedeck(bundle, "message");

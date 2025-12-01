@@ -90,10 +90,11 @@
     var TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
       "spacedeck-embedded-auth",
-      "decidim:whiteboard:setToken"
+      "decidim:whiteboard:setToken",
+      "spacedeck-force-logout"
     ];
 
-    var TOKEN_KEYS = ["accessToken", "access_token", "token"];
+    var TOKEN_KEYS = ["accessToken", "access_token", "token", "nextToken"];
 
     var STORAGE_KEYS = {
       token: "sd_session_token",
@@ -212,19 +213,23 @@
     }
 
     function forwardToSpacedeck(bundle, reason) {
-      if (!bundle || !bundle.token) return;
+      if (!bundle) return;
+      var isForceLogout = bundle.type === "spacedeck-force-logout";
+      if (!bundle.token && !isForceLogout) return;
       if (!spacedeckFrame.contentWindow) return;
-      var signature = bundleSignature(bundle);
-      if (!signature) return;
-      if (signature === lastSentSignature && !reason) return;
-      lastSentSignature = signature;
+      var signature = isForceLogout && !bundle.token ? null : bundleSignature(bundle);
+      if (signature) {
+        if (signature === lastSentSignature && !reason) return;
+        lastSentSignature = signature;
+      }
       var targetOrigin = SPACEDECK_ORIGIN || "*";
       spacedeckFrame.contentWindow.postMessage(
         {
           embedded: true,
           accessToken: bundle.token,
           email: bundle.email || undefined,
-          name: bundle.name || undefined
+          name: bundle.name || undefined,
+          type: bundle.type
         },
         targetOrigin
       );
@@ -290,7 +295,7 @@
       if (!expected) return;
 
       var token = pickToken(data);
-      if (!token) return;
+      if (!token && data.type !== "spacedeck-force-logout") return;
 
       var email =
         data.email ||
@@ -308,7 +313,7 @@
 
       var userId = data.userId || data.user_id || null;
 
-      var bundle = { token: token, email: email, name: name, userId: userId };
+      var bundle = { token: token, email: email, name: name, userId: userId, type: data.type };
       console.log(
         "[Whiteboard] Received token bundle from parent",
         origin,
