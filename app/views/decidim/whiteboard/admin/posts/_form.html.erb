@@ -69,7 +69,7 @@
     const closeBtn = document.getElementById("closeIframeModal");
     const iframe = document.getElementById("iframePreview");
     const input = document.getElementById("iframe_src_field");
-    const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/";
+    const DEFAULT_IFRAME_URL = "https://spacedeck-dev.urbreath.tech/spaces";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
       "spacedeck-embedded-auth",
@@ -108,6 +108,18 @@
       return DEFAULT_IFRAME_URL;
     }
 
+    function normalizeSpacesUrl(rawUrl) {
+      try {
+        const url = new URL(rawUrl, window.location.href);
+        if (!url.pathname || url.pathname === "/") {
+          url.pathname = "/spaces";
+        }
+        return url.toString();
+      } catch (err) {
+        return rawUrl;
+      }
+    }
+
     function forceLogoutSpacedeck() {
       if (!iframe || !iframe.contentWindow) return;
       const cached = loadStoredBundle();
@@ -130,7 +142,7 @@
     }
 
     function openModal() {
-      const iframeUrl = currentIframeUrl();
+      const iframeUrl = normalizeSpacesUrl(currentIframeUrl());
       iframe.src = iframeUrl;
       modal.style.display = "flex";
     }
