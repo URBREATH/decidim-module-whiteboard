@@ -93,6 +93,8 @@
       "https://community_demo.road-steamer.eu"
     ];
     let lastSentSignature = null;
+    let lastForcedLogoutToken = null;
+    let lastForcedLogoutAt = 0;
 
     if (!modal || !openBtn || !iframe) {
       console.warn("[Whiteboard] Missing core modal elements, skipping iframe modal init");
@@ -110,6 +112,14 @@
     function forceLogoutSpacedeck() {
       if (!iframe || !iframe.contentWindow) return;
       const cached = loadStoredBundle();
+      if (!cached || !cached.token) return; // evita logout a vuoto al primo open
+
+       // evita loop se stiamo già lavorando con questo token
+      const now = Date.now();
+      if (lastForcedLogoutToken === cached.token && now - lastForcedLogoutAt < 2000) {
+        return;
+      }
+
       const payload = {
         type: "spacedeck-force-logout"
       };
@@ -120,6 +130,8 @@
       }
       try {
         iframe.contentWindow.postMessage(payload, "*");
+        lastForcedLogoutToken = cached.token;
+        lastForcedLogoutAt = now;
       } catch (err) {
         console.warn("[Whiteboard] Unable to force logout Spacedeck iframe", err);
       }
