@@ -95,6 +95,7 @@
       "https://community_demo.road-steamer.eu"
     ];
     let lastSentSignature = null;
+    let lastTokenSeen = null;
 
     if (!modal || !openBtn || !iframe) {
       console.warn("[Whiteboard] Missing core modal elements, skipping iframe modal init");
@@ -317,6 +318,18 @@
 
         storeAuthBundle(bundle);
         forwardTokenToSpacedeck(bundle, "message");
+
+        // se il token è cambiato, inviamo subito il bundle e allineiamo l'iframe
+        if (token && token !== lastTokenSeen) {
+          lastTokenSeen = token;
+          const targetUrl = normalizeSpacesUrl(currentIframeUrl());
+          if (iframe && iframe.contentWindow) {
+            sendCachedBundle("token-refresh");
+          }
+          if (iframe && (!iframe.src || iframe.src.replace(/\/$/, "") !== targetUrl.replace(/\/$/, ""))) {
+            iframe.src = targetUrl;
+          }
+        }
       });
 
       iframe.addEventListener("load", function () {
