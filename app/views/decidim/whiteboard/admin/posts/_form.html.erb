@@ -94,7 +94,6 @@
     ];
     let lastSentSignature = null;
     let lastForcedLogoutToken = null;
-    let lastForcedLogoutAt = 0;
 
     if (!modal || !openBtn || !iframe) {
       console.warn("[Whiteboard] Missing core modal elements, skipping iframe modal init");
@@ -114,24 +113,17 @@
       const cached = loadStoredBundle();
       if (!cached || !cached.token) return; // evita logout a vuoto al primo open
 
-       // evita loop se stiamo già lavorando con questo token
-      const now = Date.now();
-      if (lastForcedLogoutToken === cached.token && now - lastForcedLogoutAt < 2000) {
-        return;
-      }
+      if (lastForcedLogoutToken === cached.token) return;
 
       const payload = {
-        type: "spacedeck-force-logout"
+        type: "spacedeck-force-logout",
+        nextToken: cached.token,
+        email: cached.email || undefined,
+        name: cached.name || undefined
       };
-      if (cached && cached.token) {
-        payload.nextToken = cached.token;
-        payload.email = cached.email || undefined;
-        payload.name = cached.name || undefined;
-      }
       try {
         iframe.contentWindow.postMessage(payload, "*");
         lastForcedLogoutToken = cached.token;
-        lastForcedLogoutAt = now;
       } catch (err) {
         console.warn("[Whiteboard] Unable to force logout Spacedeck iframe", err);
       }
@@ -141,12 +133,11 @@
       const iframeUrl = currentIframeUrl();
       iframe.src = iframeUrl;
       modal.style.display = "flex";
-      forceLogoutSpacedeck();
     }
 
     function closeModal() {
       modal.style.display = "none";
-      iframe.src = ""; // scarica l'iframe
+      // non resettiamo src per evitare flicker/loop di logout
     }
 
     openBtn.addEventListener("click", function () {
@@ -311,6 +302,8 @@
       });
 
       iframe.addEventListener("load", function () {
+        // se abbiamo già un token, forziamo logout+login solo una volta per quel token
+        forceLogoutSpacedeck();
         sendCachedBundle("iframe-load");
       });
 
