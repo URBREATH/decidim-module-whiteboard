@@ -95,12 +95,13 @@
       "https://community_demo.road-steamer.eu"
     ];
     let lastSentSignature = null;
-    let lastForcedLogoutToken = null;
 
     if (!modal || !openBtn || !iframe) {
       console.warn("[Whiteboard] Missing core modal elements, skipping iframe modal init");
       return;
     }
+
+    let iframeInitialized = false;
 
     function currentIframeUrl() {
       if (input && typeof input.value === "string") {
@@ -122,30 +123,12 @@
       }
     }
 
-    function forceLogoutSpacedeck() {
-      if (!iframe || !iframe.contentWindow) return;
-      const cached = loadStoredBundle();
-      if (!cached || !cached.token) return; // evita logout a vuoto al primo open
-
-      if (lastForcedLogoutToken === cached.token) return;
-
-      const payload = {
-        type: "spacedeck-force-logout",
-        nextToken: cached.token,
-        email: cached.email || undefined,
-        name: cached.name || undefined
-      };
-      try {
-        iframe.contentWindow.postMessage(payload, "*");
-        lastForcedLogoutToken = cached.token;
-      } catch (err) {
-        console.warn("[Whiteboard] Unable to force logout Spacedeck iframe", err);
-      }
-    }
-
     function openModal() {
-      const iframeUrl = normalizeSpacesUrl(currentIframeUrl());
-      iframe.src = iframeUrl;
+      if (!iframeInitialized || !iframe.src) {
+        const iframeUrl = normalizeSpacesUrl(currentIframeUrl());
+        iframe.src = iframeUrl;
+        iframeInitialized = true;
+      }
       modal.style.display = "flex";
     }
 
@@ -303,7 +286,7 @@
             input.value = data.url;
           }
           closeModal();
-          showUrlFeedback("URL impostato da Spacedeck");
+          showUrlFeedback("URL set from Spacedeck");
           return;
         }
 
@@ -338,8 +321,7 @@
       });
 
       iframe.addEventListener("load", function () {
-        // se abbiamo già un token, forziamo logout+login solo una volta per quel token
-        forceLogoutSpacedeck();
+        // invia il token già noto; niente force logout automatico per evitare loop
         sendCachedBundle("iframe-load");
       });
 
@@ -419,9 +401,14 @@
   }
 
   .iframe-url-feedback {
-    margin-top: 6px;
-    font-size: 0.9rem;
-    color: #2f855a;
+    margin-top: 8px;
+    font-size: 0.95rem;
+    color: #155724;
+    background: #e6fffa;
+    border: 1px solid #81e6d9;
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: inline-block;
   }
 
   @supports (aspect-ratio: 16 / 9) {
