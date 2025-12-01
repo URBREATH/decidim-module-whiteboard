@@ -101,8 +101,6 @@
       return;
     }
 
-    let iframeInitialized = false;
-
     function currentIframeUrl() {
       if (input && typeof input.value === "string") {
         const trimmed = input.value.trim();
@@ -124,10 +122,11 @@
     }
 
     function openModal() {
-      if (!iframeInitialized || !iframe.src) {
-        const iframeUrl = normalizeSpacesUrl(currentIframeUrl());
-        iframe.src = iframeUrl;
-        iframeInitialized = true;
+      const targetUrl = normalizeSpacesUrl(currentIframeUrl());
+      const currentUrl = iframe && iframe.src ? iframe.src : "";
+      // ricarica solo se l'URL è vuoto o diverso
+      if (!currentUrl || currentUrl.replace(/\/$/, "") !== targetUrl.replace(/\/$/, "")) {
+        iframe.src = targetUrl;
       }
       modal.style.display = "flex";
     }
