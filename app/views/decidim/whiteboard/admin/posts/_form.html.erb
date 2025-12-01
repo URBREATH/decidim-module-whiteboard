@@ -107,10 +107,20 @@
       return DEFAULT_IFRAME_URL;
     }
 
+    function forceLogoutSpacedeck() {
+      if (!iframe || !iframe.contentWindow) return;
+      try {
+        iframe.contentWindow.postMessage({ type: "spacedeck-force-logout" }, "*");
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to force logout Spacedeck iframe", err);
+      }
+    }
+
     function openModal() {
       const iframeUrl = currentIframeUrl();
       iframe.src = iframeUrl;
       modal.style.display = "flex";
+      forceLogoutSpacedeck();
     }
 
     function closeModal() {
