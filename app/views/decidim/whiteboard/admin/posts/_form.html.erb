@@ -85,7 +85,6 @@
       name: "sd_session_name",
       userId: "sd_session_user_id"
     };
-    const defaultIframeOrigin = resolveOriginFromUrl(DEFAULT_IFRAME_URL);
     const ALLOWED_PARENTS = [
       window.location.origin,
       "https://dashboard-dev.urbreath.tech",
@@ -103,11 +102,12 @@
       return;
     }
 
-    function resolveOriginFromUrl(rawUrl) {
+    function isAbsoluteHttpUrl(rawUrl) {
       try {
-        return new URL(rawUrl, window.location.href).origin;
+        const url = new URL(rawUrl);
+        return url.protocol === "http:" || url.protocol === "https:";
       } catch (err) {
-        return null;
+        return false;
       }
     }
 
@@ -127,17 +127,32 @@
         }
         return url.toString();
       } catch (err) {
-        return rawUrl;
+        return null;
       }
+    }
+
+    function pickPreferredSpaceUrl(data) {
+      if (!data || typeof data !== "object") return null;
+      const candidates = [
+        data.publicUrl,
+        data.public_url,
+        data.publicShareUrl,
+        data.public_share_url,
+        data.url
+      ].filter(Boolean);
+      for (const raw of candidates) {
+        if (isAbsoluteHttpUrl(raw)) {
+          const normalized = normalizeSpacesUrl(raw);
+          if (normalized) return normalized;
+        }
+      }
+      return null;
     }
 
     function openModal() {
       const rawUrl = currentIframeUrl();
-      const targetOrigin = resolveOriginFromUrl(rawUrl);
-      // Se l'URL salvato non è Spacedeck, apri comunque la selezione predefinita
-      const targetUrl = normalizeSpacesUrl(
-        targetOrigin && targetOrigin === defaultIframeOrigin ? rawUrl : DEFAULT_IFRAME_URL
-      );
+      const normalizedUrl = isAbsoluteHttpUrl(rawUrl) ? normalizeSpacesUrl(rawUrl) : null;
+      const targetUrl = normalizedUrl || DEFAULT_IFRAME_URL;
       const currentUrl = iframe && iframe.src ? iframe.src : "";
       // ricarica solo se l'URL è vuoto o diverso
       if (!currentUrl || currentUrl.replace(/\/$/, "") !== targetUrl.replace(/\/$/, "")) {
@@ -295,12 +310,14 @@
         const data = event.data;
         if (!data || typeof data !== "object") return;
 
-        if (data.type === "spacedeck-select-space" && data.url) {
+        if (data.type === "spacedeck-select-space") {
+          const preferredUrl = pickPreferredSpaceUrl(data);
+          if (!preferredUrl) return;
           if (input) {
-            input.value = data.url;
+            input.value = preferredUrl;
           }
           closeModal();
-          showUrlFeedback("URL set from Spacedeck");
+          showUrlFeedback("Public URL set from Spacedeck");
           return;
         }
 
@@ -336,12 +353,12 @@
         // se il token è cambiato, inviamo subito il bundle e allineiamo l'iframe
         if (token && token !== lastTokenSeen) {
           lastTokenSeen = token;
-          const targetUrl = normalizeSpacesUrl(currentIframeUrl());
+          const normalizedUrl = normalizeSpacesUrl(currentIframeUrl()) || DEFAULT_IFRAME_URL;
           if (iframe && iframe.contentWindow) {
             sendCachedBundle("token-refresh");
           }
-          if (iframe && (!iframe.src || iframe.src.replace(/\/$/, "") !== targetUrl.replace(/\/$/, ""))) {
-            iframe.src = targetUrl;
+          if (iframe && (!iframe.src || iframe.src.replace(/\/$/, "") !== normalizedUrl.replace(/\/$/, ""))) {
+            iframe.src = normalizedUrl;
           }
         }
       });

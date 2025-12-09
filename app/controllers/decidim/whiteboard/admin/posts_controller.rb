@@ -37,10 +37,24 @@ module Decidim
 
 
         def allow_spacedeck_iframe
-          content_security_policy.append_csp_directive(
-            "frame-src",
-            "https://spacedeck-dev.urbreath.tech https://keycloak-dev.urbreath.tech http://localhost:9666",
-          )
+          sources = [
+            "https:",
+            "https://spacedeck-dev.urbreath.tech",
+            "https://keycloak-dev.urbreath.tech",
+            "http://localhost:9666"
+          ]
+
+          candidate_urls = []
+          candidate_urls << post&.iframe_src if respond_to?(:post, true)
+          candidate_urls << params[:iframe_src] if params[:iframe_src].present?
+
+          candidate_urls.compact.each do |url|
+            sources.concat(allowed_sources_for(url))
+          end
+
+          sources.compact.uniq.each do |source|
+            content_security_policy.append_csp_directive("frame-src", source)
+          end
         end
 
 
@@ -152,6 +166,25 @@ module Decidim
 
         def post
           @post ||= Whiteboard::Post.find_by(component: current_component, id: params[:id])
+        end
+
+        def allowed_sources_for(url)
+          sources = []
+          sources << url
+          origin = origin_from_url(url)
+          sources << origin if origin.present?
+          sources.compact
+        end
+
+        def origin_from_url(url)
+          uri = URI.parse(url)
+          return nil unless uri.scheme && uri.host
+
+          origin = "#{uri.scheme}://#{uri.host}"
+          origin += ":#{uri.port}" if uri.port && uri.port != uri.default_port
+          origin
+        rescue URI::InvalidURIError
+          nil
         end
       end
     end

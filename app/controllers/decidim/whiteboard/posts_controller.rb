@@ -23,16 +23,36 @@ module Decidim
       end
 
       def add_additional_csp_directives
-        iframe_urls = []
-        iframe_urls << @iframe_src if @iframe_src.present?
-      
-        iframe_urls.each do |url|
-          content_security_policy.append_csp_directive("frame-src", url)
+        return if @iframe_src.blank?
+
+        allowed_sources_for(@iframe_src).each do |source|
+          next if source.blank?
+
+          content_security_policy.append_csp_directive("frame-src", source)
         end
       end
       
 
       private
+
+      def allowed_sources_for(url)
+        sources = []
+        sources << url
+        origin = origin_from_url(url)
+        sources << origin if origin.present?
+        sources.compact.uniq
+      end
+
+      def origin_from_url(url)
+        uri = URI.parse(url)
+        return nil unless uri.scheme && uri.host
+
+        origin = "#{uri.scheme}://#{uri.host}"
+        origin += ":#{uri.port}" if uri.port && uri.port != uri.default_port
+        origin
+      rescue URI::InvalidURIError
+        nil
+      end
 
       def paginate_posts
         @paginate_posts ||= paginate(posts.created_at_desc)
