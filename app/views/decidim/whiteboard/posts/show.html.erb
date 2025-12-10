@@ -44,6 +44,7 @@
 
     const currentDecidimUserId = "<%= current_user&.id || "" %>";
     const isLoggedIn = !!currentDecidimUserId;
+    let decidimSessionActive = isLoggedIn;
     const LAST_USER_KEY = "whiteboard:last_user_id";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
@@ -64,7 +65,7 @@
 
     let lastSentSignature = null;
     let lastTokenSeen = null;
-    let forceLogoutOnLoad = !isLoggedIn;
+    let forceLogoutOnLoad = !decidimSessionActive;
     let hasForcedLogout = false;
     let hasRemoteLogout = false;
     let inMemoryBundle = null;
@@ -196,7 +197,7 @@
 
     function sendCachedBundle(reason) {
       const cached = loadStoredBundle();
-      if (cached && cached.token && isLoggedIn) {
+      if (cached && cached.token && decidimSessionActive) {
         forwardTokenToSpacedeck(cached, reason);
       }
     }
@@ -216,6 +217,7 @@
         clearStoredBundle();
         forceLogoutOnLoad = true;
         hasForcedLogout = false;
+        decidimSessionActive = false;
         sendForceLogout("decidim-logout-message");
         remoteLogout();
         return;
@@ -235,13 +237,9 @@
         return;
       }
 
-      // se nessun utente decidim è loggato, rifiutiamo qualsiasi token e forziamo logout
-      if (!isLoggedIn && data.type !== "spacedeck-force-logout") {
-        clearStoredBundle();
-        sendForceLogout("not-logged-in");
-        remoteLogout();
-        return;
-      }
+      // token da Decidim => segna la sessione come attiva
+      decidimSessionActive = true;
+      forceLogoutOnLoad = false;
 
       const token = pickToken(data);
       if (!token && data.type !== "spacedeck-force-logout") return;
@@ -280,7 +278,7 @@
         forceLogoutOnLoad = false;
         return;
       }
-      if (!isLoggedIn) return;
+      if (!decidimSessionActive) return;
       sendCachedBundle("iframe-load");
     });
 
