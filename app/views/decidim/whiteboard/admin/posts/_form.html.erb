@@ -111,14 +111,6 @@
       }
     }
 
-    function currentIframeUrl() {
-      if (input && typeof input.value === "string") {
-        const trimmed = input.value.trim();
-        if (trimmed) return trimmed;
-      }
-      return null;
-    }
-
     function normalizeSpacesUrl(rawUrl) {
       try {
         const url = new URL(rawUrl, window.location.href);
@@ -150,13 +142,8 @@
     }
 
     function openModal() {
-      // Ignora il valore già presente nel campo: il modal deve sempre aprire la home /spaces dell'istanza di default
-      const targetUrl = DEFAULT_IFRAME_URL;
-      const currentUrl = iframe && iframe.src ? iframe.src : "";
-      // ricarica solo se l'URL è vuoto o diverso
-      if (!currentUrl || currentUrl.replace(/\/$/, "") !== targetUrl.replace(/\/$/, "")) {
-        iframe.src = targetUrl;
-      }
+      // L'iframe del modal deve mostrare sempre il personal space: ignora il campo URL del form
+      iframe.src = DEFAULT_IFRAME_URL;
       modal.style.display = "flex";
     }
 
