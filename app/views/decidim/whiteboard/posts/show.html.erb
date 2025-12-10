@@ -235,8 +235,10 @@
 
       if (!isExpectedType) return;
 
-      // se nessun utente decidim è loggato, ignoriamo token in ingresso
+      // se nessun utente decidim è loggato, rifiutiamo qualsiasi token e forziamo logout
       if (!isLoggedIn && data.type !== "spacedeck-force-logout") {
+        clearStoredBundle();
+        sendForceLogout("not-logged-in");
         return;
       }
 
