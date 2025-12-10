@@ -52,12 +52,6 @@
       "spacedeck-force-logout"
     ];
     const TOKEN_KEYS = ["accessToken", "access_token", "token", "nextToken"];
-    const STORAGE_KEYS = {
-      token: "sd_session_token",
-      email: "sd_session_email",
-      name: "sd_session_name",
-      userId: "sd_session_user_id"
-    };
     const ALLOWED_PARENTS = [
       window.location.origin,
       "https://dashboard-dev.urbreath.tech",
@@ -73,6 +67,7 @@
     let forceLogoutOnLoad = !isLoggedIn;
     let hasForcedLogout = false;
     let hasRemoteLogout = false;
+    let inMemoryBundle = null;
 
     function markUserChange() {
       try {
@@ -104,59 +99,29 @@
     }
 
     function storeAuthBundle(bundle) {
-      if (!bundle || !bundle.token) return;
-      try {
-        if (bundle.userId && window.localStorage) {
-          window.localStorage.setItem(STORAGE_KEYS.userId, String(bundle.userId));
-        }
-        if (bundle.token && window.sessionStorage) {
-          window.sessionStorage.setItem(STORAGE_KEYS.token, bundle.token);
-        }
-        if (bundle.token && window.localStorage) {
-          window.localStorage.setItem(STORAGE_KEYS.token, bundle.token);
-        }
-        if (bundle.email && window.localStorage) {
-          window.localStorage.setItem(STORAGE_KEYS.email, bundle.email);
-        }
-        if (bundle.name && window.localStorage) {
-          window.localStorage.setItem(STORAGE_KEYS.name, bundle.name);
-        }
-      } catch (err) {
-        console.warn("[Whiteboard] Unable to persist auth bundle", err);
-      }
+      // Keep auth only in-memory for this page view; do not persist between visits
+      inMemoryBundle = bundle && bundle.token ? { ...bundle } : null;
     }
 
     function clearStoredBundle() {
-      try {
-        if (window.sessionStorage) {
-          window.sessionStorage.removeItem(STORAGE_KEYS.token);
-        }
-        if (window.localStorage) {
-          window.localStorage.removeItem(STORAGE_KEYS.token);
-          window.localStorage.removeItem(STORAGE_KEYS.email);
-          window.localStorage.removeItem(STORAGE_KEYS.name);
-          window.localStorage.removeItem(STORAGE_KEYS.userId);
-        }
-      } catch (err) {
-        console.warn("[Whiteboard] Unable to clear cached auth bundle", err);
-      }
+      inMemoryBundle = null;
       lastSentSignature = null;
       lastTokenSeen = null;
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.removeItem("sd_session_token");
+        }
+        if (window.localStorage) {
+          window.localStorage.removeItem("sd_session_token");
+          window.localStorage.removeItem("sd_session_email");
+          window.localStorage.removeItem("sd_session_name");
+          window.localStorage.removeItem("sd_session_user_id");
+        }
+      } catch (err) {}
     }
 
     function loadStoredBundle() {
-      try {
-        const token =
-          (window.sessionStorage && window.sessionStorage.getItem(STORAGE_KEYS.token)) ||
-          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
-        const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
-        const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
-        const userId = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.userId) : null;
-        return { token, email, name, userId };
-      } catch (err) {
-        console.warn("[Whiteboard] Unable to read stored auth bundle", err);
-        return { token: null, email: null, name: null, userId: null };
-      }
+      return inMemoryBundle;
     }
 
     function resolveIframeOrigin() {
@@ -231,12 +196,14 @@
 
     function sendCachedBundle(reason) {
       const cached = loadStoredBundle();
-      if (cached && cached.token) {
+      if (cached && cached.token && isLoggedIn) {
         forwardTokenToSpacedeck(cached, reason);
       }
     }
 
     markUserChange();
+    // ensure no persisted tokens survive across visits
+    clearStoredBundle();
 
     window.addEventListener("message", function handleAuthMessage(event) {
       if (!originAllowed(event.origin)) return;
@@ -259,6 +226,14 @@
         (data.type && TOKEN_MESSAGE_TYPES.includes(data.type));
 
       if (!isExpectedType) return;
+
+      // Accettiamo token solo se arrivano dal parent (es. dashboard Decidim) e non dall'iframe Spacedeck stesso
+      const iframeOrigin = resolveIframeOrigin();
+      const isFromIframe = iframeOrigin && event.origin === iframeOrigin;
+      const hasParentOrigin = typeof data.parentOrigin === "string" && data.parentOrigin.length > 0;
+      if (!hasParentOrigin || isFromIframe) {
+        return;
+      }
 
       // se nessun utente decidim è loggato, rifiutiamo qualsiasi token e forziamo logout
       if (!isLoggedIn && data.type !== "spacedeck-force-logout") {
