@@ -70,6 +70,7 @@
     let lastSentSignature = null;
     let lastTokenSeen = null;
     let forceLogoutOnLoad = false;
+    let hasForcedLogout = false;
 
     function markUserChange() {
       try {
@@ -259,8 +260,11 @@
     });
 
     iframe.addEventListener("load", function () {
-      if (forceLogoutOnLoad) {
+      if (forceLogoutOnLoad && !hasForcedLogout) {
         sendForceLogout("user-changed");
+        hasForcedLogout = true;
+        forceLogoutOnLoad = false;
+        return;
       }
       sendCachedBundle("iframe-load");
     });
