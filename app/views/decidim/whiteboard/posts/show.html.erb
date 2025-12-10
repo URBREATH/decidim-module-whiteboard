@@ -37,6 +37,236 @@
   </main>
   </div>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const iframe = document.getElementById("whiteboard-spacedeck-frame");
+    if (!iframe) return;
+
+    const currentDecidimUserId = "<%= current_user&.id || "" %>";
+    const LAST_USER_KEY = "whiteboard:last_user_id";
+    const TOKEN_MESSAGE_TYPES = [
+      "spacedeck-token",
+      "spacedeck-embedded-auth",
+      "decidim:whiteboard:setToken",
+      "spacedeck-force-logout"
+    ];
+    const TOKEN_KEYS = ["accessToken", "access_token", "token", "nextToken"];
+    const STORAGE_KEYS = {
+      token: "sd_session_token",
+      email: "sd_session_email",
+      name: "sd_session_name",
+      userId: "sd_session_user_id"
+    };
+    const ALLOWED_PARENTS = [
+      window.location.origin,
+      "https://dashboard-dev.urbreath.tech",
+      "https://decidim-dev.urbreath.tech",
+      "https://decidim-2-dev.urbreath.tech",
+      "http://localhost:3001",
+      "http://localhost:3001/testIframe.html",
+      "https://community_demo.road-steamer.eu"
+    ];
+
+    let lastSentSignature = null;
+    let lastTokenSeen = null;
+    let forceLogoutOnLoad = false;
+
+    function markUserChange() {
+      try {
+        const prev = window.localStorage ? window.localStorage.getItem(LAST_USER_KEY) : null;
+        if (prev !== currentDecidimUserId) {
+          if (window.localStorage) {
+            window.localStorage.setItem(LAST_USER_KEY, currentDecidimUserId || "");
+          }
+          forceLogoutOnLoad = !!prev;
+          if (forceLogoutOnLoad) {
+            clearStoredBundle();
+          }
+        }
+      } catch (err) {
+        forceLogoutOnLoad = false;
+      }
+    }
+
+    function bundleSignature(bundle) {
+      if (!bundle || !bundle.token) return null;
+      const userId = bundle.userId || "";
+      const email = bundle.email || "";
+      const name = bundle.name || "";
+      return [bundle.token, userId, email, name].join("|");
+    }
+
+    function storeAuthBundle(bundle) {
+      if (!bundle || !bundle.token) return;
+      try {
+        if (bundle.userId && window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.userId, String(bundle.userId));
+        }
+        if (bundle.token && window.sessionStorage) {
+          window.sessionStorage.setItem(STORAGE_KEYS.token, bundle.token);
+        }
+        if (bundle.token && window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.token, bundle.token);
+        }
+        if (bundle.email && window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.email, bundle.email);
+        }
+        if (bundle.name && window.localStorage) {
+          window.localStorage.setItem(STORAGE_KEYS.name, bundle.name);
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to persist auth bundle", err);
+      }
+    }
+
+    function clearStoredBundle() {
+      try {
+        if (window.sessionStorage) {
+          window.sessionStorage.removeItem(STORAGE_KEYS.token);
+        }
+        if (window.localStorage) {
+          window.localStorage.removeItem(STORAGE_KEYS.token);
+          window.localStorage.removeItem(STORAGE_KEYS.email);
+          window.localStorage.removeItem(STORAGE_KEYS.name);
+          window.localStorage.removeItem(STORAGE_KEYS.userId);
+        }
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to clear cached auth bundle", err);
+      }
+      lastSentSignature = null;
+      lastTokenSeen = null;
+    }
+
+    function loadStoredBundle() {
+      try {
+        const token =
+          (window.sessionStorage && window.sessionStorage.getItem(STORAGE_KEYS.token)) ||
+          (window.localStorage && window.localStorage.getItem(STORAGE_KEYS.token));
+        const email = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.email) : null;
+        const name = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.name) : null;
+        const userId = window.localStorage ? window.localStorage.getItem(STORAGE_KEYS.userId) : null;
+        return { token, email, name, userId };
+      } catch (err) {
+        console.warn("[Whiteboard] Unable to read stored auth bundle", err);
+        return { token: null, email: null, name: null, userId: null };
+      }
+    }
+
+    function resolveIframeOrigin() {
+      try {
+        return new URL(iframe.src).origin;
+      } catch (err) {
+        try {
+          return iframe.src ? new URL(iframe.src, window.location.href).origin : null;
+        } catch (secondErr) {
+          return null;
+        }
+      }
+    }
+
+    function originAllowed(origin) {
+      if (!origin) return false;
+      const iframeOrigin = resolveIframeOrigin();
+      if (iframeOrigin && origin === iframeOrigin) return true;
+      return ALLOWED_PARENTS.indexOf(origin) !== -1;
+    }
+
+    function pickToken(data) {
+      for (const key of TOKEN_KEYS) {
+        if (data && typeof data === "object" && data[key]) {
+          return data[key];
+        }
+      }
+      return null;
+    }
+
+    function forwardTokenToSpacedeck(bundle, reason) {
+      if (!iframe || !iframe.contentWindow) return;
+      if (!bundle) return;
+      const isForceLogout = bundle.type === "spacedeck-force-logout";
+      if (!bundle.token && !isForceLogout) return;
+
+      const signature = isForceLogout && !bundle.token ? null : bundleSignature(bundle);
+      if (signature) {
+        if (signature === lastSentSignature && !reason) return;
+        lastSentSignature = signature;
+      }
+
+      iframe.contentWindow.postMessage(
+        {
+          embedded: true,
+          accessToken: bundle.token,
+          email: bundle.email || undefined,
+          name: bundle.name || undefined,
+          type: bundle.type
+        },
+        "*"
+      );
+    }
+
+    function sendForceLogout(reason) {
+      forwardTokenToSpacedeck({ type: "spacedeck-force-logout" }, reason || "force-logout");
+    }
+
+    function sendCachedBundle(reason) {
+      const cached = loadStoredBundle();
+      if (cached && cached.token) {
+        forwardTokenToSpacedeck(cached, reason);
+      }
+    }
+
+    markUserChange();
+
+    window.addEventListener("message", function handleAuthMessage(event) {
+      if (!originAllowed(event.origin)) return;
+
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+
+      const isExpectedType =
+        data.embedded === true ||
+        (data.type && TOKEN_MESSAGE_TYPES.includes(data.type));
+
+      if (!isExpectedType) return;
+
+      const token = pickToken(data);
+      if (!token && data.type !== "spacedeck-force-logout") return;
+
+      const email =
+        data.email ||
+        (data.user && data.user.email) ||
+        data.username ||
+        data.userEmail ||
+        null;
+
+      const name =
+        data.name ||
+        (data.user && (data.user.name || data.user.displayName)) ||
+        data.fullName ||
+        data.preferred_username ||
+        (email ? email.split("@")[0] : null);
+
+      const userId = data.userId || data.user_id || null;
+      const bundle = { token, email, name, userId, type: data.type };
+
+      storeAuthBundle(bundle);
+      forwardTokenToSpacedeck(bundle, "message");
+
+      if (token && token !== lastTokenSeen) {
+        lastTokenSeen = token;
+        sendCachedBundle("token-refresh");
+      }
+    });
+
+    iframe.addEventListener("load", function () {
+      if (forceLogoutOnLoad) {
+        sendForceLogout("user-changed");
+      }
+      sendCachedBundle("iframe-load");
+    });
+  });
+</script>
+
 <%= render layout: "layouts/decidim/shared/layout_center", locals: { columns: 8 } do %>
 
   <section class="layout-main__section layout-main__heading">
