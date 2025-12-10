@@ -43,6 +43,7 @@
     if (!iframe) return;
 
     const currentDecidimUserId = "<%= current_user&.id || "" %>";
+    const isLoggedIn = !!currentDecidimUserId;
     const LAST_USER_KEY = "whiteboard:last_user_id";
     const TOKEN_MESSAGE_TYPES = [
       "spacedeck-token",
@@ -69,7 +70,7 @@
 
     let lastSentSignature = null;
     let lastTokenSeen = null;
-    let forceLogoutOnLoad = false;
+    let forceLogoutOnLoad = !isLoggedIn;
     let hasForcedLogout = false;
 
     function markUserChange() {
@@ -79,13 +80,17 @@
           if (window.localStorage) {
             window.localStorage.setItem(LAST_USER_KEY, currentDecidimUserId || "");
           }
-          forceLogoutOnLoad = !!prev;
+          // user changed or logged out
+          forceLogoutOnLoad = !!prev || !isLoggedIn;
           if (forceLogoutOnLoad) {
             clearStoredBundle();
           }
         }
       } catch (err) {
-        forceLogoutOnLoad = false;
+        if (!isLoggedIn) {
+          forceLogoutOnLoad = true;
+          clearStoredBundle();
+        }
       }
     }
 
@@ -230,6 +235,11 @@
 
       if (!isExpectedType) return;
 
+      // se nessun utente decidim è loggato, ignoriamo token in ingresso
+      if (!isLoggedIn && data.type !== "spacedeck-force-logout") {
+        return;
+      }
+
       const token = pickToken(data);
       if (!token && data.type !== "spacedeck-force-logout") return;
 
@@ -266,6 +276,7 @@
         forceLogoutOnLoad = false;
         return;
       }
+      if (!isLoggedIn) return;
       sendCachedBundle("iframe-load");
     });
   });
