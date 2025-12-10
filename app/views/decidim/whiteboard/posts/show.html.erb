@@ -72,6 +72,7 @@
     let lastTokenSeen = null;
     let forceLogoutOnLoad = !isLoggedIn;
     let hasForcedLogout = false;
+    let hasRemoteLogout = false;
 
     function markUserChange() {
       try {
@@ -177,6 +178,20 @@
       return ALLOWED_PARENTS.indexOf(origin) !== -1;
     }
 
+    function remoteLogout() {
+      if (hasRemoteLogout) return;
+      const origin = resolveIframeOrigin();
+      if (!origin) return;
+      hasRemoteLogout = true;
+      try {
+        fetch(origin + "/api/sessions/current", {
+          method: "DELETE",
+          credentials: "include",
+          mode: "cors"
+        }).catch(() => {});
+      } catch (err) {}
+    }
+
     function pickToken(data) {
       for (const key of TOKEN_KEYS) {
         if (data && typeof data === "object" && data[key]) {
@@ -229,6 +244,16 @@
       const data = event.data;
       if (!data || typeof data !== "object") return;
 
+      // se il messaggio arriva da Decidim senza token, trattalo come logout esplicito
+      if (!data.accessToken && !data.token && data.parentOrigin === window.location.origin) {
+        clearStoredBundle();
+        forceLogoutOnLoad = true;
+        hasForcedLogout = false;
+        sendForceLogout("decidim-logout-message");
+        remoteLogout();
+        return;
+      }
+
       const isExpectedType =
         data.embedded === true ||
         (data.type && TOKEN_MESSAGE_TYPES.includes(data.type));
@@ -239,6 +264,7 @@
       if (!isLoggedIn && data.type !== "spacedeck-force-logout") {
         clearStoredBundle();
         sendForceLogout("not-logged-in");
+        remoteLogout();
         return;
       }
 
@@ -274,6 +300,7 @@
     iframe.addEventListener("load", function () {
       if (forceLogoutOnLoad && !hasForcedLogout) {
         sendForceLogout("user-changed");
+        remoteLogout();
         hasForcedLogout = true;
         forceLogoutOnLoad = false;
         return;
@@ -281,6 +308,13 @@
       if (!isLoggedIn) return;
       sendCachedBundle("iframe-load");
     });
+
+    // se la pagina nasce senza utente loggato, prova a disattivare la sessione spacedeck fin da subito
+    if (!isLoggedIn) {
+      clearStoredBundle();
+      sendForceLogout("initial-guest");
+      remoteLogout();
+    }
   });
 </script>
 
