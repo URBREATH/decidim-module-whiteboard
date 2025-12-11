@@ -53,6 +53,10 @@
       "spacedeck-force-logout"
     ];
     const TOKEN_KEYS = ["accessToken", "access_token", "token", "nextToken"];
+    const EMBEDDED_STORAGE_KEYS = {
+      token: "embedded_token",
+      refreshToken: "embedded_refresh_token"
+    };
     const ALLOWED_PARENTS = [
       window.location.origin,
       "https://dashboard-dev.urbreath.tech",
@@ -167,6 +171,17 @@
       return null;
     }
 
+    function readEmbeddedTokens() {
+      try {
+        return {
+          token: window.sessionStorage ? window.sessionStorage.getItem(EMBEDDED_STORAGE_KEYS.token) : null,
+          refreshToken: window.sessionStorage ? window.sessionStorage.getItem(EMBEDDED_STORAGE_KEYS.refreshToken) : null
+        };
+      } catch (err) {
+        return { token: null, refreshToken: null };
+      }
+    }
+
     function forwardTokenToSpacedeck(bundle, reason) {
       if (!iframe || !iframe.contentWindow) return;
       if (!bundle) return;
@@ -185,6 +200,8 @@
           accessToken: bundle.token,
           email: bundle.email || undefined,
           name: bundle.name || undefined,
+          refreshToken: bundle.refreshToken || undefined,
+          parentOrigin: window.location.origin,
           type: bundle.type
         },
         "*"
@@ -205,6 +222,23 @@
     markUserChange();
     // ensure no persisted tokens survive across visits
     clearStoredBundle();
+
+    function bootstrapFromEmbeddedSession() {
+      const tokens = readEmbeddedTokens();
+      if (!isLoggedIn || !tokens.token) return;
+      decidimSessionActive = true;
+      forceLogoutOnLoad = false;
+      const bundle = {
+        token: tokens.token,
+        refreshToken: tokens.refreshToken,
+        email: null,
+        name: null,
+        userId: currentDecidimUserId,
+        type: "spacedeck-embedded-auth"
+      };
+      storeAuthBundle(bundle);
+      forwardTokenToSpacedeck(bundle, "bootstrap-embedded-token");
+    }
 
     window.addEventListener("message", function handleAuthMessage(event) {
       if (!originAllowed(event.origin)) return;
@@ -280,6 +314,7 @@
       }
       if (!decidimSessionActive) return;
       sendCachedBundle("iframe-load");
+      bootstrapFromEmbeddedSession();
     });
 
     // se la pagina nasce senza utente loggato, prova a disattivare la sessione spacedeck fin da subito
@@ -287,6 +322,8 @@
       clearStoredBundle();
       sendForceLogout("initial-guest");
       remoteLogout();
+    } else {
+      bootstrapFromEmbeddedSession();
     }
   });
 </script>
