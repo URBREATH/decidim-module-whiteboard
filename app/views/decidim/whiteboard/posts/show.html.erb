@@ -115,6 +115,7 @@
       try {
         if (window.sessionStorage) {
           window.sessionStorage.removeItem("sd_session_token");
+          // keep embedded_token/refreshToken to allow bootstrap from Decidim
         }
         if (window.localStorage) {
           window.localStorage.removeItem("sd_session_token");
@@ -220,9 +221,6 @@
     }
 
     markUserChange();
-    // ensure no persisted tokens survive across visits
-    clearStoredBundle();
-
     function bootstrapFromEmbeddedSession() {
       const tokens = readEmbeddedTokens();
       if (!isLoggedIn || !tokens.token) return;
@@ -239,6 +237,9 @@
       storeAuthBundle(bundle);
       forwardTokenToSpacedeck(bundle, "bootstrap-embedded-token");
     }
+    // ensure no persisted sd_session survives across visits, but keep embedded tokens for bootstrap
+    clearStoredBundle();
+    bootstrapFromEmbeddedSession();
 
     window.addEventListener("message", function handleAuthMessage(event) {
       if (!originAllowed(event.origin)) return;
@@ -267,7 +268,8 @@
       const iframeOrigin = resolveIframeOrigin();
       const isFromIframe = iframeOrigin && event.origin === iframeOrigin;
       const hasParentOrigin = typeof data.parentOrigin === "string" && data.parentOrigin.length > 0;
-      if (!hasParentOrigin || isFromIframe) {
+      const isSameOriginParent = event.origin === window.location.origin;
+      if ((!hasParentOrigin && !isSameOriginParent) || isFromIframe) {
         return;
       }
 
@@ -322,8 +324,6 @@
       clearStoredBundle();
       sendForceLogout("initial-guest");
       remoteLogout();
-    } else {
-      bootstrapFromEmbeddedSession();
     }
   });
 </script>
