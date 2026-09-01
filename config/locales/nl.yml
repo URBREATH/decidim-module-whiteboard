@@ -76,7 +76,7 @@ nl:
           comment: Reageren
           create: Maken
           destroy: Verwijderen
-          endorse: Ondersteunen
+          like: Vind ik leuk
           update: Bijwerken
         name: Whiteboard
         settings:
@@ -105,8 +105,8 @@ nl:
           step:
             announcement: Aankondiging
             comments_blocked: Reacties geblokkeerd
-            endorsements_blocked: Ondersteuningen geblokkeerd
-            endorsements_enabled: Ondersteuningen ingeschakeld
+            likes_blocked: Likes geblokkeerd
+            likes_enabled: Likes ingeschakeld
     events:
       whiteboard:
         post_created:

@@ -15,18 +15,18 @@ FactoryBot.define do
     manifest_name { :whiteboard }
     participatory_space { create(:participatory_process, :with_steps, skip_injection:, organization:) }
 
-    trait :with_endorsements_enabled do
+    trait :with_likes_enabled do
       step_settings do
         {
-          participatory_space.active_step.id => { endorsements_enabled: true }
+          participatory_space.active_step.id => { likes_enabled: true }
         }
       end
     end
 
-    trait :with_endorsements_disabled do
+    trait :with_likes_disabled do
       step_settings do
         {
-          participatory_space.active_step.id => { endorsements_enabled: false }
+          participatory_space.active_step.id => { likes_enabled: false }
         }
       end
     end
@@ -42,10 +42,10 @@ FactoryBot.define do
     component { build(:post_component, skip_injection:) }
     author { build(:user, :confirmed, skip_injection:, organization: component.organization) }
 
-    trait :with_endorsements do
+    trait :with_likes do
       after :create do |post, evaluator|
         5.times.collect do
-          create(:endorsement,
+          create(:like,
                  resource: post,
                  skip_injection: evaluator.skip_injection,
                  author: build(:user, skip_injection: evaluator.skip_injection, organization: post.participatory_space.organization))

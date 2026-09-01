@@ -76,7 +76,7 @@ ro:
           comment: Comentează
           create: Creează
           destroy: Șterge
-          endorse: Susține
+          like: Îmi place
           update: Actualizează
         name: Tablă
         settings:
@@ -105,8 +105,8 @@ ro:
           step:
             announcement: Anunț
             comments_blocked: Comentarii blocate
-            endorsements_blocked: Susțineri blocate
-            endorsements_enabled: Susțineri activate
+            likes_blocked: Aprecieri blocate
+            likes_enabled: Aprecieri activate
     events:
       whiteboard:
         post_created:

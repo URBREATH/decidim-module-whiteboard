@@ -5,7 +5,6 @@ module Decidim
     module Admin
       # This controller allows the create or update a blog.
       class PostsController < Admin::ApplicationController
-        helper UserGroupHelper
         helper PostsHelper
 
         helper_method :iframe, :remove_margins?, :viewport_width?

@@ -76,7 +76,7 @@ it:
           comment: Commenta
           create: Crea
           destroy: Elimina
-          endorse: Appoggia
+          like: Mi piace
           update: Aggiorna
         name: Whiteboard
         settings:
@@ -105,8 +105,8 @@ it:
           step:
             announcement: Annuncio
             comments_blocked: Commenti bloccati
-            endorsements_blocked: Approvazioni bloccate
-            endorsements_enabled: Approvazioni abilitate
+            likes_blocked: Mi piace bloccati
+            likes_enabled: Mi piace abilitati
     events:
       whiteboard:
         post_created:

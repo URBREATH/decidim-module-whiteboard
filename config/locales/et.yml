@@ -76,7 +76,7 @@ et:
           comment: Kommenteeri
           create: Loo
           destroy: Kustuta
-          endorse: Toeta
+          like: Meeldib
           update: Uuenda
         name: Tahvel
         settings:
@@ -105,8 +105,8 @@ et:
           step:
             announcement: Teade
             comments_blocked: Kommentaarid blokeeritud
-            endorsements_blocked: Toetused blokeeritud
-            endorsements_enabled: Toetused lubatud
+            likes_blocked: Toetused blokeeritud
+            likes_enabled: Toetused lubatud
     events:
       whiteboard:
         post_created:

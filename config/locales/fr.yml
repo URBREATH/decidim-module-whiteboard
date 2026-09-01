@@ -76,7 +76,7 @@ fr:
           comment: Commenter
           create: Créer
           destroy: Supprimer
-          endorse: Approuver
+          like: J’aime
           update: Mettre à jour
         name: Tableau blanc
         settings:
@@ -105,8 +105,8 @@ fr:
           step:
             announcement: Annonce
             comments_blocked: Commentaires désactivés
-            endorsements_blocked: Approbations désactivées
-            endorsements_enabled: Approbations activées
+            likes_blocked: Mentions J’aime bloquées
+            likes_enabled: Mentions J’aime activées
     events:
       whiteboard:
         post_created:

@@ -28,14 +28,14 @@ Decidim.register_component(:whiteboard) do |component|
   component.settings(:step) do |settings|
     settings.attribute :announcement, type: :text, translated: true, editor: true
     settings.attribute :comments_blocked, type: :boolean, default: false
-    settings.attribute :endorsements_enabled, type: :boolean, default: true
-    settings.attribute :endorsements_blocked, type: :boolean
+    settings.attribute :likes_enabled, type: :boolean, default: true
+    settings.attribute :likes_blocked, type: :boolean
   end
 
   component.register_resource(:blogpost) do |resource|
     resource.model_class_name = "Decidim::Whiteboard::Post"
     resource.card = "decidim/whiteboard/post"
-    resource.actions = %w(endorse comment)
+    resource.actions = %w(like comment)
     resource.searchable = true
   end
 

@@ -76,7 +76,7 @@ fi:
           comment: Kommentoi
           create: Luo
           destroy: Poista
-          endorse: Tue
+          like: Tykkää
           update: Päivitä
         name: Taulu
         settings:
@@ -105,8 +105,8 @@ fi:
           step:
             announcement: Ilmoitus
             comments_blocked: Kommentit estetty
-            endorsements_blocked: Tuet estetty
-            endorsements_enabled: Tuet käytössä
+            likes_blocked: Tuet estetty
+            likes_enabled: Tuet käytössä
     events:
       whiteboard:
         post_created:

@@ -77,7 +77,7 @@ en:
         comment: Comment
         create: Create
         destroy: Delete
-        endorse: Endorse
+        like: Like
         update: Update
       name: Whiteboard
       settings:
@@ -106,8 +106,8 @@ en:
         step:
           announcement: Announcement
           comments_blocked: Comments blocked
-          endorsements_blocked: Endorsements blocked
-          endorsements_enabled: Endorsements enabled
+          likes_blocked: Likes blocked
+          likes_enabled: Likes enabled
     events:
       whiteboard:
         post_created:

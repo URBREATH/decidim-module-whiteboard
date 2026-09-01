@@ -76,7 +76,7 @@ es:
           comment: Comentar
           create: Crear
           destroy: Eliminar
-          endorse: Respaldar
+          like: Me gusta
           update: Actualizar
         name: Pizarra
         settings:
@@ -105,8 +105,8 @@ es:
           step:
             announcement: Anuncio
             comments_blocked: Comentarios bloqueados
-            endorsements_blocked: Respaldos bloqueados
-            endorsements_enabled: Respaldos habilitados
+            likes_blocked: Me gusta bloqueados
+            likes_enabled: Me gusta habilitados
     events:
       whiteboard:
         post_created:

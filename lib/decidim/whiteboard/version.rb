@@ -4,7 +4,7 @@ module Decidim
   # This holds the decidim-pages version.
   module Whiteboard
     def self.version
-      "0.29.1"
+      "0.31.4"
     end
   end
 end

@@ -76,7 +76,7 @@ da:
           comment: Kommenter
           create: Opret
           destroy: Slet
-          endorse: Understøt
+          like: Synes godt om
           update: Opdater
         name: Tavle
         settings:
@@ -105,8 +105,8 @@ da:
           step:
             announcement: Meddelelse
             comments_blocked: Kommentarer blokeret
-            endorsements_blocked: Understøttelser blokeret
-            endorsements_enabled: Understøttelser aktiveret
+            likes_blocked: Understøttelser blokeret
+            likes_enabled: Understøttelser aktiveret
     events:
       whiteboard:
         post_created:

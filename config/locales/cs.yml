@@ -76,7 +76,7 @@ cs:
           comment: Komentovat
           create: Vytvořit
           destroy: Odstranit
-          endorse: Podpořit
+          like: To se mi líbí
           update: Aktualizovat
         name: Tabule
         settings:
@@ -105,8 +105,8 @@ cs:
           step:
             announcement: Oznámení
             comments_blocked: Komentáře blokovány
-            endorsements_blocked: Podpory blokovány
-            endorsements_enabled: Podpory povoleny
+            likes_blocked: Podpory blokovány
+            likes_enabled: Podpory povoleny
     events:
       whiteboard:
         post_created:

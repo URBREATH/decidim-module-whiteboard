@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
-describe Decidim::ResourceEndorsedEvent do
+describe Decidim::ResourceLikedEvent do
   let(:resource) { create(:post, title: generate_localized_title(:blog_title)) }
   let(:resource_type) { "Post" }
   let(:resource_text) { resource.body }
 
-  it_behaves_like "resource endorsed event"
+  it_behaves_like "resource liked event"
 end

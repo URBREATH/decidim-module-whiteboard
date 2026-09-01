@@ -13,7 +13,7 @@ module Decidim::Whiteboard
     let(:post) { create(:post, component: current_component, author: current_user, published_at:) }
     let(:published_at) { nil }
 
-    include_examples "endorsable"
+    include_examples "likeable"
     include_examples "has component"
     include_examples "resourceable"
 

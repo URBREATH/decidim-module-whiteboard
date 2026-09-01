@@ -76,7 +76,7 @@ el:
           comment: Σχολίασε
           create: Δημιουργία
           destroy: Διαγραφή
-          endorse: Υποστήριξη
+          like: Μου αρέσει
           update: Ενημέρωση
         name: Πίνακας
         settings:
@@ -105,8 +105,8 @@ el:
           step:
             announcement: Ανακοίνωση
             comments_blocked: Σχόλια μπλοκαρισμένα
-            endorsements_blocked: Υποστηρίξεις μπλοκαρισμένες
-            endorsements_enabled: Υποστηρίξεις ενεργοποιημένες
+            likes_blocked: Υποστηρίξεις μπλοκαρισμένες
+            likes_enabled: Υποστηρίξεις ενεργοποιημένες
     events:
       whiteboard:
         post_created:

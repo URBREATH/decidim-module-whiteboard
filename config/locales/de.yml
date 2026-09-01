@@ -76,7 +76,7 @@ de:
           comment: Kommentar
           create: Erstellen
           destroy: Löschen
-          endorse: Zustimmen
+          like: Gefällt mir
           update: Aktualisieren
         name: Whiteboard
         settings:
@@ -105,8 +105,8 @@ de:
           step:
             announcement: Ankündigung
             comments_blocked: Kommentare gesperrt
-            endorsements_blocked: Zustimmungen gesperrt
-            endorsements_enabled: Zustimmungen aktiviert
+            likes_blocked: Zustimmungen gesperrt
+            likes_enabled: Zustimmungen aktiviert
     events:
       whiteboard:
         post_created:
